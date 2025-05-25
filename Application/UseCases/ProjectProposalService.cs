@@ -1,4 +1,5 @@
-﻿using Application.Interfaces;
+﻿/*using Application.Interfaces;
+using Application.Interfaces.IProjectProporsal;
 using Domain.Entities;
 
 namespace Application.UseCases
@@ -152,4 +153,4 @@ namespace Application.UseCases
             }
         }
     }
-}
+}*/

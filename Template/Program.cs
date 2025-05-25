@@ -1,4 +1,12 @@
+using Application.Interfaces.IApprovalStatus;
+using Application.Interfaces.IArea;
+using Application.Interfaces.IProjectType;
+using Application.Interfaces.IRole;
+using Application.Interfaces.IUser;
+using Application.UseCases;
+using Infrastructure.Command;
 using Infrastructure.Persistence;
+using Infrastructure.Query;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -15,20 +23,21 @@ var connectionString = builder.Configuration["ConnectionString"];
 
 builder.Services.AddDbContext<AprobacionDbContext>(options => options.UseSqlServer(connectionString));
 
-/*builder.Services.AddScoped<IGenericoMapper, GenericoMapper>();
+builder.Services.AddScoped<IAreaQuery, AreaQuery>();
+builder.Services.AddScoped<IAreaCommands, AreaCommands>();
+builder.Services.AddScoped<IAreaService, AreaService>();
 
-builder.Services.AddScoped<IGeneroCommand,GeneroCommand>();
-builder.Services.AddScoped<IGeneroQuery, GeneroQuery>();
-builder.Services.AddScoped<IGeneroService, GeneroService>();
+builder.Services.AddScoped<IUserQuery, UserQuery>();
+builder.Services.AddScoped<IUserService, UserService>();
 
-builder.Services.AddScoped<IArtistaCommand,ArtistaCommand>();
-builder.Services.AddScoped<IArtistaQuery,ArtistaQuery>();
-builder.Services.AddScoped<IArtistaService,ArtistaService>();
+builder.Services.AddScoped<IProjectTypeQuery, ProjectTypeQuery>();
+builder.Services.AddScoped<IProjectTypeService, ProjectTypeService>();
 
-builder.Services.AddScoped<IAlbumCommand,AlbumCommand>();
-builder.Services.AddScoped<IAlbumQuery,AlbumQuery>();
-builder.Services.AddScoped<IAlbumService,AlbumService>();
-builder.Services.AddScoped<IAlbumMapper,AlbumMapper>();*/
+builder.Services.AddScoped<IRoleQuery, RoleQuery>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+
+builder.Services.AddScoped<IApprovalStatusQuery, ApprovalStatusQuery>();
+builder.Services.AddScoped<IApprovalStatusService, ApprovalStatusService>();
 
 
 var app = builder.Build();

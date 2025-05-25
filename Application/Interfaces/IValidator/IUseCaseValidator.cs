@@ -1,4 +1,4 @@
-﻿namespace Application.Interfaces
+﻿namespace Application.Interfaces.IValidator
 {
     public interface IUseCaseValidator
     {

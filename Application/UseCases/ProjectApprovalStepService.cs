@@ -1,5 +1,5 @@
-﻿using Application.Interfaces;
-using Application.Interfaces;
+﻿/*using Application.Interfaces;
+using Application.Interfaces.IProjectProporsal;
 
 namespace Application.UseCases
 {
@@ -207,5 +207,5 @@ namespace Application.UseCases
             }
         }
     }
-}
+}*/
 
