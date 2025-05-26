@@ -6,14 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Query
 {
-    public class AreaQuery : IAreaQuery
+    public class AreaQuery(AprobacionDbContext context) : IAreaQuery
     {
-        private readonly AprobacionDbContext _context;
-
-        public AreaQuery(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task<Area> GetAreaById(int id)
         {

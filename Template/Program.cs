@@ -1,12 +1,16 @@
 using Application.Interfaces.IApprovalStatus;
 using Application.Interfaces.IArea;
+using Application.Interfaces.IProjectProporsal;
 using Application.Interfaces.IProjectType;
 using Application.Interfaces.IRole;
 using Application.Interfaces.IUser;
+using Application.Interfaces.IValidator;
 using Application.UseCases;
+using Infraestructura.Validations;
 using Infrastructure.Command;
 using Infrastructure.Persistence;
 using Infrastructure.Query;
+using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -39,6 +43,12 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IApprovalStatusQuery, ApprovalStatusQuery>();
 builder.Services.AddScoped<IApprovalStatusService, ApprovalStatusService>();
 
+builder.Services.AddScoped<IProjectProposalService, ProjectProposalService>();
+builder.Services.AddScoped<IProjectProposalRepository, ProjectProposalRepository>();
+builder.Services.AddScoped<GetProjectById>();
+builder.Services.AddScoped<UpdateProjectProposal>();
+
+builder.Services.AddScoped<IDatabaseValidator, DatabaseValidator>();
 
 var app = builder.Build();
 

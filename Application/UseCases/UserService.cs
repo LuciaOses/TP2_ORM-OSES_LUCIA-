@@ -4,14 +4,9 @@ using Domain.Entities;
 
 namespace Application.UseCases
 {
-    public class UserService : IUserService
+    public class UserService(IUserQuery query) : IUserService
     {
-        private readonly IUserQuery _query;
-
-        public UserService(IUserQuery query)
-        {
-            _query = query;
-        }
+        private readonly IUserQuery _query = query;
 
         public async Task<List<User>> GetAllAsync()
         {

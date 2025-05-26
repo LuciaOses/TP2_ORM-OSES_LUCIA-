@@ -6,16 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Command
 {
-    public class AreaCommands : IAreaCommands
+    public class AreaCommands(AprobacionDbContext context, IAreaQuery query) : IAreaCommands
     {
-        private readonly AprobacionDbContext _context;
-        private readonly IAreaQuery _query;
-
-        public AreaCommands(AprobacionDbContext context, IAreaQuery query)
-        {
-            _context = context;
-            _query = query;
-        }
+        private readonly AprobacionDbContext _context = context;
+        private readonly IAreaQuery _query = query;
 
         public async Task<Area> InsertArea(Area area)
         {

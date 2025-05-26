@@ -6,14 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Query
 {
-    public class UserQuery : IUserQuery
+    public class UserQuery(AprobacionDbContext context) : IUserQuery
     {
-        private readonly AprobacionDbContext _context;
-
-        public UserQuery(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task<List<User>> GetAllUsers()
         {

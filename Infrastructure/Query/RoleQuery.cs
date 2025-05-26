@@ -5,14 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Query
 {
-    public class RoleQuery : IRoleQuery
+    public class RoleQuery(AprobacionDbContext context) : IRoleQuery
     {
-        private readonly AprobacionDbContext _context;
-
-        public RoleQuery(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task<List<ApproverRole>> GetAllRoles()
         {

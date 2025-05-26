@@ -5,16 +5,10 @@ using Application.Interfaces.IArea;
 
 namespace Application.UseCases
 {
-    public class AreaService : IAreaService
+    public class AreaService(IAreaCommands command, IAreaQuery query) : IAreaService
     {
-        private readonly IAreaCommands _command;
-        private readonly IAreaQuery _query;
-
-        public AreaService(IAreaCommands command, IAreaQuery query)
-        {
-            _command = command;
-            _query = query;
-        }
+        private readonly IAreaCommands _command = command;
+        private readonly IAreaQuery _query = query;
 
         public async Task<bool> DeleteAsync(int id)
         {
@@ -36,7 +30,7 @@ namespace Application.UseCases
 
         private Task<AreaResponse> CreateAreaResponse(Area area)
         {
-            AreaResponse response = new AreaResponse
+            AreaResponse response = new()
             {
                 Id = area.Id,
                 Name = area.Name

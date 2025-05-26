@@ -1,156 +1,126 @@
-﻿/*using Application.Interfaces;
-using Application.Interfaces.IProjectProporsal;
+﻿using Application.Interfaces.IProjectProporsal;
+using Application.Interfaces.IValidator;
+using Application.Mappers.Application.Mappers;
+using Application.Response;
 using Domain.Entities;
+using System.ComponentModel.DataAnnotations;
+using Application.Request;
+using Microsoft.EntityFrameworkCore;
+using Application.Exceptions;
 
 namespace Application.UseCases
 {
-    public class ProjectProposalService(
-        IProjectProposalRepository repo,
-        ApprovalService approvalService,
-        IDatabaseValidator validator)
+    public class ProjectProposalService : IProjectProposalService
     {
-        private readonly IProjectProposalRepository _repo = repo;
-        private readonly ApprovalService _approvalService = approvalService;
-        private readonly IDatabaseValidator _validator = validator;
+        private readonly IProjectProposalRepository _repository;
+        private readonly IDatabaseValidator _validator;
 
-        public async Task CrearSolicitud()
+        public ProjectProposalService(IProjectProposalRepository repository, IDatabaseValidator validator)
         {
-            Console.Write("Título: ");
-            var titulo = Console.ReadLine();
+            _repository = repository;
+            _validator = validator;
+        }
 
-            Console.Write("Descripción: ");
-            var descripcion = Console.ReadLine();
+        public async Task<bool> ExistingProject(string title)
+        {
+            return await _repository.ExistsByTitle(title);
+        }
 
-            Console.Write("Monto estimado: ");
-            if (!decimal.TryParse(Console.ReadLine(), out var monto))
-            {
-                Console.WriteLine("Monto inválido.");
-                return;
-            }
+        public async Task<ProjectProposalResponseDetail> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
+        {
+            await _validator.ValidateAreaExistsAsync(areaId);
+            await _validator.ValidateUserExistsAsync(userId);
 
-            Console.Write("Duración estimada (días): ");
-            if (!int.TryParse(Console.ReadLine(), out var duracion))
-            {
-                Console.WriteLine("Duración inválida.");
-                return;
-            }
+            if (!await _validator.ProjectTypeExists(typeId))
+                throw new ValidationException("El tipo de proyecto especificado no existe.");
 
-            Console.WriteLine("\nÁreas disponibles:");
-            Console.WriteLine("ID\tNombre");
-            Console.WriteLine("1\tFinanzas");
-            Console.WriteLine("2\tTecnología");
-            Console.WriteLine("3\tRecursos Humanos");
-            Console.WriteLine("4\tOperaciones");
-
-            Console.Write("\nID del Área: ");
-            if (!int.TryParse(Console.ReadLine(), out var areaId) || areaId < 1 || areaId > 4)
-            {
-                Console.WriteLine("ID de área inválido. Por favor, seleccione un ID válido de la lista.");
-                return;
-            }
-
-            Console.WriteLine("\nTipos de proyecto disponibles:");
-            Console.WriteLine("ID\tNombre");
-            Console.WriteLine("1\tMejora de Procesos");
-            Console.WriteLine("2\tInnovación y Desarrollo");
-            Console.WriteLine("3\tInfraestructura");
-            Console.WriteLine("4\tCapacitación Interna");
-
-            Console.Write("\nID del Tipo de Proyecto: ");
-            if (!int.TryParse(Console.ReadLine(), out var tipoId) || tipoId < 1 || tipoId > 4)
-            {
-                Console.WriteLine("ID de tipo de proyecto inválido. Por favor, seleccione un ID válido de la lista.");
-                return;
-            }
-
-            Console.Write("ID del Usuario Creador: ");
-            if (!int.TryParse(Console.ReadLine(), out var creadoPor))
-            {
-                Console.WriteLine("ID de usuario inválido.");
-                return;
-            }
-
-      
-            try
-            {
-                await _validator.ValidateUserExistsAsync(creadoPor);
-                await _validator.ValidateAreaExistsAsync(areaId);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error de validación: {ex.Message}");
-                return;
-            }
-
-            var solicitud = new ProjectProposal
+            var entity = new ProjectProposal
             {
                 Id = Guid.NewGuid(),
-                Title = titulo!,
-                Description = descripcion!,
-                EstimatedAmount = monto,
-                EstimatedDuration = duracion,
+                Title = title,
+                Description = description,
                 Area = areaId,
-                Type = tipoId,
-                Status = 1, // Pendiente
-                CreateAt = DateTime.Now,
-                CreateBy = creadoPor
+                Type = typeId,
+                EstimatedAmount = amount,
+                EstimatedDuration = duration,
+                CreateBy = userId,
+                CreateAt = DateTime.UtcNow,
+                Status = 1 // Estado inicial
             };
 
-            await _repo.AddAsync(solicitud);
-            Console.WriteLine("Solicitud creada con éxito.");
-
-            await _approvalService.GenerarWorkflowAsync(solicitud);
-            Console.WriteLine("Flujo de aprobación generado.");
+            await _repository.AddAsync(entity);
+            return ProjectProposalMapper.ToDetail(entity);
         }
 
-        public async Task VerEstadoSolicitudAsync()
+        public async Task<IEnumerable<ProjectProposalResponseDetail>> SearchProjects(ProjectFilterRequest filters)
         {
-            Console.Write("Ingrese el ID de la solicitud: ");
-            var input = Console.ReadLine();
-            if (!Guid.TryParse(input, out var id))
+            var query = _repository.Query().AsQueryable();
+
+            if (filters.ApprovalUser.HasValue)
             {
-                Console.WriteLine("ID inválido.");
-                return;
+                query = query.Include(p => p.ApprovalSteps)
+                             .Where(p => p.ApprovalSteps.Any(s => s.ApproverUserId == filters.ApprovalUser.Value));
             }
 
-            var propuesta = await _repo.GetByIdWithEstadoAsync(id);
-            if (propuesta == null)
-            {
-                Console.WriteLine("Solicitud no encontrada.");
-                return;
-            }
+            if (!string.IsNullOrWhiteSpace(filters.Title))
+                query = query.Where(p => p.Title.Contains(filters.Title));
 
-            Console.WriteLine($"Título: {propuesta.Title}");
-            Console.WriteLine($"Estado: {propuesta.StatusNavigation?.Name ?? "Desconocido"}");
-            Console.WriteLine($"Monto estimado: {propuesta.EstimatedAmount}");
-            Console.WriteLine($"Área: {propuesta.Area}");
-            Console.WriteLine($"Tipo de proyecto: {propuesta.Type}");
+            if (filters.Status.HasValue)
+                query = query.Where(p => p.Status == filters.Status.Value);
+
+            if (filters.Applicant.HasValue)
+                query = query.Where(p => p.CreateBy == filters.Applicant.Value);
+
+            var result = await query.ToListAsync();
+            return result.Select(ProjectProposalMapper.ToDetail);
         }
-        public async Task ListarSolicitudes()
+
+        public async Task<ProjectProposalResponseDetail> TakeDecision(Guid projectId, DecisionStepRequest request)
         {
-            var solicitudes = await _repo.GetAllAsync();
+            await _validator.ValidateUserExistsAsync(request.User);
 
-            if (solicitudes == null || solicitudes.Count == 0)
+            var project = await _repository.GetByIdWithStepsAsync(projectId);
+            if (project is null)
+                throw new ExceptionNotFound("Proyecto no encontrado");
+
+            var step = project.ApprovalSteps
+                              .FirstOrDefault(s => s.ApproverUserId == request.User);
+
+            if (step is null)
+                throw new ExceptionBadRequest("El usuario no está habilitado para aprobar este proyecto.");
+
+            if (step.Status is not 1 and not 3)
+                throw new ExceptionBadRequest("El paso ya fue resuelto; no puede modificarse.");
+
+            if ((request.Status == 3 || request.Status == 4) &&
+                string.IsNullOrWhiteSpace(request.Observation))
+                throw new ValidationException("La observación es obligatoria para observar o rechazar.");
+
+            step.Status = request.Status;  
+            step.Observations = request.Observation;
+            step.DecisionDate = DateTime.UtcNow;
+
+            switch (request.Status)
             {
-                Console.WriteLine("No hay solicitudes registradas.");
-                return;
+                case 2: // Aprobado
+                    if (project.ApprovalSteps.All(s => s.Status == 2))
+                        project.Status = 2; 
+                    break;
+
+                case 3: // Observado
+                    project.Status = 3;
+                    break;
+
+                case 4: // Rechazado
+                    project.Status = 4;
+                    break;
             }
 
-            Console.WriteLine("\n--- Lista de Solicitudes ---");
-            foreach (var solicitud in solicitudes)
-            {
-                Console.WriteLine($"ID: {solicitud.Id}");
-                Console.WriteLine($"Título: {solicitud.Title}");
-                Console.WriteLine($"Descripción: {solicitud.Description}");
-                Console.WriteLine($"Monto estimado: {solicitud.EstimatedAmount}");
-                Console.WriteLine($"Duración: {solicitud.EstimatedDuration} días");
-                Console.WriteLine($"Área ID: {solicitud.Area}");
-                Console.WriteLine($"Tipo ID: {solicitud.Type}");
-                Console.WriteLine($"Estado: {solicitud.Status}");
-                Console.WriteLine($"Creado el: {solicitud.CreateAt}");
-                Console.WriteLine($"Creado por (Usuario ID): {solicitud.CreateBy}");
-                Console.WriteLine("-----------------------------\n");
-            }
+            await _repository.UpdateAsync(project);
+            await _repository.SaveChangesAsync();
+
+            return ProjectProposalMapper.ToDetail(project);
         }
+
     }
-}*/
+}

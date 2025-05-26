@@ -9,22 +9,13 @@ namespace Solicitud_De_Proyecto.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class InformationController : ControllerBase
+    public class InformationController(IUserService userService, IAreaService areaService, IProjectTypeService projectTypeService, IRoleService roleService, IApprovalStatusService approvalStatusService) : ControllerBase
     {
-        private readonly IUserService userService;
-        private readonly IAreaService areaService;
-        private readonly IProjectTypeService projectTypeService;
-        private readonly IRoleService roleService;
-        private readonly IApprovalStatusService approvalStatusService;
-
-        public InformationController(IUserService userService, IAreaService areaService, IProjectTypeService projectTypeService, IRoleService roleService, IApprovalStatusService approvalStatusService)
-        {
-            this.userService = userService;
-            this.areaService = areaService;
-            this.projectTypeService = projectTypeService;
-            this.roleService = roleService;
-            this.approvalStatusService = approvalStatusService;
-        }
+        private readonly IUserService userService = userService;
+        private readonly IAreaService areaService = areaService;
+        private readonly IProjectTypeService projectTypeService = projectTypeService;
+        private readonly IRoleService roleService = roleService;
+        private readonly IApprovalStatusService approvalStatusService = approvalStatusService;
 
         [HttpGet("Area")]
         public async Task<IActionResult> GetAreas()

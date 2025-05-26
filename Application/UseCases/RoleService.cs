@@ -8,14 +8,9 @@ using System.Threading.Tasks;
 
 namespace Application.UseCases
 {
-    public class RoleService : IRoleService
+    public class RoleService(IRoleQuery query) : IRoleService
     {
-        private readonly IRoleQuery _query;
-
-        public RoleService(IRoleQuery query)
-        {
-            _query = query;
-        }
+        private readonly IRoleQuery _query = query;
 
         public async Task<List<ApproverRole>> GetAllAsync()
         {

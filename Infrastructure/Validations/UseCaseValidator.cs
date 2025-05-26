@@ -1,6 +1,6 @@
 ﻿using Application.Interfaces.IValidator;
 
-namespace Infraestructura.Validations
+namespace Infrastructure.Validations
 {
     public class UseCaseValidator : IUseCaseValidator
     {

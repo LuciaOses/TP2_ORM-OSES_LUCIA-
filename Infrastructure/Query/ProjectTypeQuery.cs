@@ -10,14 +10,9 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Query
 {
-    public class ProjectTypeQuery : IProjectTypeQuery
+    public class ProjectTypeQuery(AprobacionDbContext context) : IProjectTypeQuery
     {
-        private readonly AprobacionDbContext _context;
-
-        public ProjectTypeQuery(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task<List<ProjectType>> GetAllProjectTypes()
         {
