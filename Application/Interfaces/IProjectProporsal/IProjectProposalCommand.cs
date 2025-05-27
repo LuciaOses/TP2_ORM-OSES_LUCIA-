@@ -10,6 +10,7 @@ namespace Application.Interfaces.IProjectProporsal
         Task<ProjectProposal?> GetByIdWithStepsAsync(Guid id);
         Task UpdateAsync(ProjectProposal proposal);
         Task SaveChangesAsync();
-        Task<ProjectProposal> GetProjectWithStepsByIdAsync(Guid projectId);
+        Task<ProjectProposal?> GetProjectWithStepsByIdAsync(Guid projectId);
+
     }
 }
