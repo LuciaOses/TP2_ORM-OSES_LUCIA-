@@ -24,7 +24,7 @@ namespace Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectProposalResponseDetail>>> GetProjects(
+        public async Task<ActionResult<IEnumerable<Project>>> GetProjects(
             [FromQuery] string? title,
             [FromQuery] int? status,
             [FromQuery] int? applicant,
@@ -43,7 +43,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ProjectProposalResponseDetail>> Create([FromBody] ProjectCreateRequest request)
+        public async Task<ActionResult<Project>> Create([FromBody] ProjectCreate request)
         {
             if (!ModelState.IsValid || request.User <= 0 || request.Duration <= 0 || request.Type <= 0 || request.Area <= 0)
                 return BadRequest(new ApiError { Message = "Datos del proyecto inválidos" });
@@ -65,11 +65,11 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}/decision")]
-        [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<ProjectProposalResponseDetail>> TakeDecision(Guid id, [FromBody] DecisionStepRequest request)
+        public async Task<ActionResult<Project>> TakeDecision(Guid id, [FromBody] DecisionStep request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiError { Message = "El modelo de decisión es inválido." });
@@ -101,7 +101,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateProject(Guid id, [FromBody] ProjectUpdateRequest request)
+        public async Task<IActionResult> UpdateProject(Guid id, [FromBody] ProjectUpdate request)
         {
             if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.Title) || request.Duration <= 0)
                 return BadRequest(new ApiError { Message = "Datos de actualización inválidos" });
@@ -128,4 +128,3 @@ namespace Presentation.Controllers
 
     }
 }
-

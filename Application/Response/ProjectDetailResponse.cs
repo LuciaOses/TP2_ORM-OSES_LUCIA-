@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace Application.Response
 {
     public class ProjectDetailResponse
@@ -19,8 +14,8 @@ namespace Application.Response
         public string CreatedBy { get; set; }
         public DateTime CreateAt { get; set; }
 
-        public List<ProjectApprovalStepResponse> ApprovalSteps { get; set; }
+        public List<ApprovalStep> ApprovalSteps { get; set; }
 
-        public static readonly ProjectDetailResponse Conflict = new ProjectDetailResponse { Status = "-1" }; // ⛔ esta línea tiene otro problema que corregimos abajo
+        public static readonly ProjectDetailResponse Conflict = new ProjectDetailResponse { Status = "-1" };
     }
 }

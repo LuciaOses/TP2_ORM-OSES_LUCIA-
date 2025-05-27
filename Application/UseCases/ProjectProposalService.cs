@@ -12,10 +12,10 @@ namespace Application.UseCases
 {
     public class ProjectProposalService : IProjectProposalService
     {
-        private readonly IProjectProposalRepository _repository;
+        private readonly IProjectProposalCommand _repository;
         private readonly IDatabaseValidator _validator;
 
-        public ProjectProposalService(IProjectProposalRepository repository, IDatabaseValidator validator)
+        public ProjectProposalService(IProjectProposalCommand repository, IDatabaseValidator validator)
         {
             _repository = repository;
             _validator = validator;
@@ -26,7 +26,7 @@ namespace Application.UseCases
             return await _repository.ExistsByTitle(title);
         }
 
-        public async Task<ProjectProposalResponseDetail> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
+        public async Task<Project> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
         {
             await _validator.ValidateAreaExistsAsync(areaId);
             await _validator.ValidateUserExistsAsync(userId);
@@ -52,7 +52,7 @@ namespace Application.UseCases
             return ProjectProposalMapper.ToDetail(entity);
         }
 
-        public async Task<IEnumerable<ProjectProposalResponseDetail>> SearchProjects(ProjectFilterRequest filters)
+        public async Task<IEnumerable<Project>> SearchProjects(ProjectFilterRequest filters)
         {
             var query = _repository.Query().AsQueryable();
 
@@ -75,11 +75,11 @@ namespace Application.UseCases
             return result.Select(ProjectProposalMapper.ToDetail);
         }
 
-        public async Task<ProjectProposalResponseDetail> TakeDecision(Guid projectId, DecisionStepRequest request)
+        public async Task<Project> TakeDecision(Guid projectId, DecisionStep request)
         {
             await _validator.ValidateUserExistsAsync(request.User);
 
-            var project = await _repository.GetByIdWithStepsAsync(projectId);
+            var project = await _repository.GetProjectWithStepsByIdAsync(projectId);
             if (project is null)
                 throw new ExceptionNotFound("Proyecto no encontrado");
 

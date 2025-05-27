@@ -4,8 +4,8 @@ namespace Application.Interfaces.IArea
 {
     public interface IAreaService
     {
-        Task<List<AreaResponse>> GetAllAsync();
-        Task<AreaResponse> GetByIdAsync(int id);
+        Task<List<GenericResponse>> GetAllAsync();
+        Task<GenericResponse> GetByIdAsync(int id);
         Task<bool> DeleteAsync(int id);
     }
 }

@@ -16,21 +16,21 @@ namespace Application.UseCases
             return true;
         }
 
-        public async Task<List<AreaResponse>> GetAllAsync()
+        public async Task<List<GenericResponse>> GetAllAsync()
         {
             var areas = await _query.GetListAreas();
-            return areas.Select(a => new AreaResponse { Id = a.Id, Name = a.Name }).ToList();
+            return areas.Select(a => new GenericResponse { Id = a.Id, Name = a.Name }).ToList();
         }
 
-        public async Task<AreaResponse> GetByIdAsync(int id)
+        public async Task<GenericResponse> GetByIdAsync(int id)
         {
             var area = await _query.GetAreaById(id);
-            return new AreaResponse { Id = area.Id, Name = area.Name };
+            return new GenericResponse { Id = area.Id, Name = area.Name };
         }
 
-        private Task<AreaResponse> CreateAreaResponse(Area area)
+        private Task<GenericResponse> CreateAreaResponse(Area area)
         {
-            AreaResponse response = new()
+            GenericResponse response = new()
             {
                 Id = area.Id,
                 Name = area.Name

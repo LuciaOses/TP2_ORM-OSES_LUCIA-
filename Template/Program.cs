@@ -19,9 +19,16 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+builder.Services.AddSwaggerGen(c =>
+{
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    c.IncludeXmlComments(xmlPath);
+});
 
 var connectionString = builder.Configuration["ConnectionString"];
 
@@ -44,7 +51,7 @@ builder.Services.AddScoped<IApprovalStatusQuery, ApprovalStatusQuery>();
 builder.Services.AddScoped<IApprovalStatusService, ApprovalStatusService>();
 
 builder.Services.AddScoped<IProjectProposalService, ProjectProposalService>();
-builder.Services.AddScoped<IProjectProposalRepository, ProjectProposalRepository>();
+builder.Services.AddScoped<IProjectProposalCommand, ProjectProposalCommand>();
 builder.Services.AddScoped<GetProjectById>();
 builder.Services.AddScoped<UpdateProjectProposal>();
 

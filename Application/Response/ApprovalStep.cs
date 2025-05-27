@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿
 namespace Application.Response
 {
-    public class ProjectApprovalStepResponse
+    public class ApprovalStep
     {
         public int? StepOrder { get; set; }
         public string? ApproverUser { get; set; }

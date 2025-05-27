@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Repositories
 {
-    public class ProjectProposalRepository : IProjectProposalRepository
+    public class ProjectProposalCommand : IProjectProposalCommand
     {
         private readonly AprobacionDbContext _context;
 
-        public ProjectProposalRepository(AprobacionDbContext context)
+        public ProjectProposalCommand(AprobacionDbContext context)
         {
             _context = context;
         }
@@ -46,7 +46,7 @@ namespace Infrastructure.Repositories
         public async Task UpdateAsync(ProjectProposal proposal)
         {
             _context.ProjectProposals.Update(proposal);
-            
+
         }
 
         public async Task SaveChangesAsync()

@@ -1,15 +1,13 @@
 ﻿using Application.Interfaces.IProjectProporsal;
 using Application.Mappers;
 using Application.Response;
-using Application.UseCases;
-
 namespace Application.UseCases
 {
     public class GetProjectById
     {
-        private readonly IProjectProposalRepository _repository;
+        private readonly IProjectProposalCommand _repository;
 
-        public GetProjectById(IProjectProposalRepository repository)
+        public GetProjectById(IProjectProposalCommand repository)
         {
             _repository = repository;
         }

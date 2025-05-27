@@ -2,20 +2,19 @@
 using Application.Mappers;
 using Application.Request;
 using Application.Response;
-using Domain.Entities;
 
 namespace Application.UseCases
 {
     public class UpdateProjectProposal
     {
-        private readonly IProjectProposalRepository _repository;
+        private readonly IProjectProposalCommand _repository;
 
-        public UpdateProjectProposal(IProjectProposalRepository repository)
+        public UpdateProjectProposal(IProjectProposalCommand repository)
         {
             _repository = repository;
         }
 
-        public async Task<ProjectDetailResponse?> ExecuteAsync(Guid id, ProjectUpdateRequest request)
+        public async Task<ProjectDetailResponse?> ExecuteAsync(Guid id, ProjectUpdate request)
         {
             var proposal = await _repository.GetByIdWithStepsAsync(id);
             if (proposal == null) return null;

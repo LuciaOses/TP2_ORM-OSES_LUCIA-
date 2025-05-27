@@ -8,9 +8,9 @@ namespace Application.Mappers
     {
         public static class ProjectProposalMapper
         {
-            public static ProjectProposalResponseDetail ToDetail(ProjectProposal proposal)
+            public static Project ToDetail(ProjectProposal proposal)
             {
-                return new ProjectProposalResponseDetail
+                return new Project
                 {
                     Id = proposal.Id,
                     Title = proposal.Title,

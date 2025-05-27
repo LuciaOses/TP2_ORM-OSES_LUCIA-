@@ -1,10 +1,5 @@
 ﻿using Application.Response;
 using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Mappers
 {
@@ -26,7 +21,7 @@ namespace Application.Mappers
                 CreateAt = proposal.CreateAt,
                 ApprovalSteps = proposal.ApprovalSteps
                     .OrderBy(s => s.StepOrder)
-                    .Select(step => new ProjectApprovalStepResponse
+                    .Select(step => new ApprovalStep
                     {
                         StepOrder = step.StepOrder,
                         ApproverUser = step.ApproverUser?.Name,
