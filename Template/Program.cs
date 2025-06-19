@@ -12,7 +12,6 @@ using Infrastructure.Query;
 using Infrastructure.Command;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -41,6 +40,7 @@ builder.Services.AddScoped<IAreaService, AreaService>();
 
 builder.Services.AddScoped<IUserQuery, UserQuery>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserCommand, UserCommand>();
 
 builder.Services.AddScoped<IProjectTypeQuery, ProjectTypeQuery>();
 builder.Services.AddScoped<IProjectTypeService, ProjectTypeService>();

@@ -1,6 +1,6 @@
-﻿using Domain.Entities;
+﻿using Application.Interfaces.IArea;
 using Application.Response;
-using Application.Interfaces.IArea;
+using Domain.Entities;
 
 
 namespace Application.UseCases
@@ -26,16 +26,6 @@ namespace Application.UseCases
         {
             var area = await _query.GetAreaById(id);
             return new GenericResponse { Id = area.Id, Name = area.Name };
-        }
-
-        private Task<GenericResponse> CreateAreaResponse(Area area)
-        {
-            GenericResponse response = new()
-            {
-                Id = area.Id,
-                Name = area.Name
-            };
-            return Task.FromResult(response);
         }
     }
 

@@ -116,9 +116,11 @@ namespace Application.UseCases
             if (step is null)
                 throw new ExceptionBadRequest("El usuario no está habilitado para aprobar este proyecto.");
 
-            if (step.Status is not 1 and not 3)
-                throw new ExceptionBadRequest("El paso ya fue resuelto; no puede modificarse.");
+            
+            if (step.Status != 1 && step.Status != 4)
+                throw new ExceptionBadRequest("El paso ya fue resuelto y no puede modificarse.");
 
+            
             if ((request.Status == 3 || request.Status == 4) &&
                 string.IsNullOrWhiteSpace(request.Observation))
                 throw new ValidationException("La observación es obligatoria para observar o rechazar.");
@@ -127,6 +129,7 @@ namespace Application.UseCases
             step.Observations = request.Observation;
             step.DecisionDate = DateTime.UtcNow;
 
+            
             switch (request.Status)
             {
                 case 2: // Aprobado
@@ -134,11 +137,11 @@ namespace Application.UseCases
                         project.Status = 2;
                     break;
 
-                case 3: // Observado
+                case 3: // Rechazado
                     project.Status = 3;
                     break;
 
-                case 4: // Rechazado
+                case 4: // Observado
                     project.Status = 4;
                     break;
             }
@@ -150,4 +153,4 @@ namespace Application.UseCases
             return ProjectProposalMapper.ToDetail(project);
         }
     }
-}
+}    

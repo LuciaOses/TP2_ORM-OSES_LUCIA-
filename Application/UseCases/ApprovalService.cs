@@ -1,4 +1,5 @@
 ﻿using Application.Interfaces;
+using Application.Interfaces.IUser; 
 using Domain.Entities;
 
 namespace Application.UseCases
@@ -7,11 +8,13 @@ namespace Application.UseCases
     {
         private readonly IApprovalRuleQuery _ruleRepo;
         private readonly IProjectApprovalStepCommand _stepRepo;
+        private readonly IUserCommand _userSelector;
 
-        public ApprovalService(IApprovalRuleQuery ruleRepo, IProjectApprovalStepCommand stepRepo)
+        public ApprovalService(IApprovalRuleQuery ruleRepo, IProjectApprovalStepCommand stepRepo, IUserCommand userSelector)
         {
             _ruleRepo = ruleRepo;
             _stepRepo = stepRepo;
+            _userSelector = userSelector;
         }
 
         public async Task GenerarWorkflowAsync(ProjectProposal propuesta)
@@ -39,11 +42,15 @@ namespace Application.UseCases
 
             foreach (var regla in reglasSeleccionadas)
             {
+                var usuarios = await _userSelector.GetByRoleAsync(regla.ApproverRoleId);
+                var usuario = usuarios.FirstOrDefault();
+
                 var paso = new ProjectApprovalStep
                 {
                     ProjectProposalId = propuesta.Id,
                     StepOrder = regla.StepOrder,
                     ApproverRoleId = regla.ApproverRoleId,
+                    ApproverUserId = usuario?.Id,
                     Status = 1 // Pendiente
                 };
 
