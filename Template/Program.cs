@@ -1,3 +1,4 @@
+﻿using Application.Interfaces;
 using Application.Interfaces.IApprovalStatus;
 using Application.Interfaces.IArea;
 using Application.Interfaces.IProjectProporsal;
@@ -7,11 +8,11 @@ using Application.Interfaces.IUser;
 using Application.Interfaces.IValidator;
 using Application.UseCases;
 using Infraestructura.Validations;
+using Infrastructure.Query;
 using Infrastructure.Command;
 using Infrastructure.Persistence;
-using Infrastructure.Query;
-using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Repositories;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,18 +56,33 @@ builder.Services.AddScoped<IProjectProposalCommand, ProjectProposalCommand>();
 builder.Services.AddScoped<GetProjectById>();
 builder.Services.AddScoped<UpdateProjectProposal>();
 
+builder.Services.AddScoped<IApprovalRuleQuery, ApprovalRuleQuery>();
+builder.Services.AddScoped<IProjectApprovalStepCommand, ProjectApprovalStepCommand>();
+builder.Services.AddScoped<ApprovalService>();
+
+
 builder.Services.AddScoped<IDatabaseValidator, DatabaseValidator>();
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend",
+        policy => policy
+            .WithOrigins("http://localhost:5000")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowFrontend"); 
 
 app.UseAuthorization();
 

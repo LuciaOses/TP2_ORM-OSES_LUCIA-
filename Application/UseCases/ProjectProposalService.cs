@@ -1,12 +1,13 @@
-﻿using Application.Interfaces.IProjectProporsal;
+﻿using Application.Exceptions;
+using Application.Interfaces.IProjectProporsal;
 using Application.Interfaces.IValidator;
 using Application.Mappers.Application.Mappers;
+using Application.Request;
 using Application.Response;
 using Domain.Entities;
-using System.ComponentModel.DataAnnotations;
-using Application.Request;
 using Microsoft.EntityFrameworkCore;
-using Application.Exceptions;
+using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 
 namespace Application.UseCases
 {
@@ -14,11 +15,19 @@ namespace Application.UseCases
     {
         private readonly IProjectProposalCommand _repository;
         private readonly IDatabaseValidator _validator;
+        private readonly ApprovalService _approvalService;
+        private readonly ILogger<ProjectProposalService> _logger;
 
-        public ProjectProposalService(IProjectProposalCommand repository, IDatabaseValidator validator)
+        public ProjectProposalService(
+            IProjectProposalCommand repository,
+            IDatabaseValidator validator,
+            ApprovalService approvalService,
+            ILogger<ProjectProposalService> logger)
         {
             _repository = repository;
             _validator = validator;
+            _approvalService = approvalService;
+            _logger = logger;
         }
 
         public async Task<bool> ExistingProject(string title)
@@ -26,7 +35,14 @@ namespace Application.UseCases
             return await _repository.ExistsByTitle(title);
         }
 
-        public async Task<Project> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
+        public async Task<Project> CreateProjectProposal(
+            string title,
+            string? description,
+            int areaId,
+            int typeId,
+            decimal amount,
+            int duration,
+            int userId)
         {
             await _validator.ValidateAreaExistsAsync(areaId);
             await _validator.ValidateUserExistsAsync(userId);
@@ -37,18 +53,29 @@ namespace Application.UseCases
             var entity = new ProjectProposal
             {
                 Id = Guid.NewGuid(),
-                Title = title,
-                Description = description,
+                Title = title.Trim(),
+                Description = description?.Trim(),
                 Area = areaId,
                 Type = typeId,
                 EstimatedAmount = amount,
                 EstimatedDuration = duration,
                 CreateBy = userId,
                 CreateAt = DateTime.UtcNow,
-                Status = 1 // Estado inicial
+                Status = 1 // Pendiente
             };
 
-            await _repository.AddAsync(entity);
+            try
+            {
+                await _repository.AddAsync(entity);
+                await _approvalService.GenerarWorkflowAsync(entity);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error al crear la propuesta de proyecto: {ex.Message}");
+                throw new Exception("Error al crear la propuesta de proyecto.", ex);
+            }
+
+            _logger.LogInformation($"Proyecto creado con éxito: {entity.Id}");
             return ProjectProposalMapper.ToDetail(entity);
         }
 
@@ -96,7 +123,7 @@ namespace Application.UseCases
                 string.IsNullOrWhiteSpace(request.Observation))
                 throw new ValidationException("La observación es obligatoria para observar o rechazar.");
 
-            step.Status = request.Status;  
+            step.Status = request.Status;
             step.Observations = request.Observation;
             step.DecisionDate = DateTime.UtcNow;
 
@@ -104,7 +131,7 @@ namespace Application.UseCases
             {
                 case 2: // Aprobado
                     if (project.ApprovalSteps.All(s => s.Status == 2))
-                        project.Status = 2; 
+                        project.Status = 2;
                     break;
 
                 case 3: // Observado
@@ -119,8 +146,8 @@ namespace Application.UseCases
             await _repository.UpdateAsync(project);
             await _repository.SaveChangesAsync();
 
+            _logger.LogInformation($"Se ha tomado una decisión sobre el proyecto: {projectId} - Estado actualizado a {project.Status}");
             return ProjectProposalMapper.ToDetail(project);
         }
-
     }
 }

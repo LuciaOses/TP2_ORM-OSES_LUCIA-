@@ -98,6 +98,11 @@ namespace Presentation.Controllers
             {
                 return Conflict(new ApiError { Message = ex.Message });
             }
+            catch (ExceptionBadRequest ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
+
         }
 
         [HttpPatch("{id}")]

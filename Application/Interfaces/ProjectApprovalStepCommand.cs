@@ -2,7 +2,7 @@
 
 namespace Application.Interfaces;
 
-public interface IProjectApprovalStepRepository
+public interface IProjectApprovalStepCommand
 {
     Task AddAsync(ProjectApprovalStep step);
     Task<ProjectApprovalStep?> GetByIdAsync(int id);

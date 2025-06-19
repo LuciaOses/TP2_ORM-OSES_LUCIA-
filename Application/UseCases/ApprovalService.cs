@@ -3,10 +3,16 @@ using Domain.Entities;
 
 namespace Application.UseCases
 {
-    public class ApprovalService(IApprovalRuleRepository ruleRepo, IProjectApprovalStepRepository stepRepo)
+    public class ApprovalService
     {
-        private readonly IApprovalRuleRepository _ruleRepo = ruleRepo;
-        private readonly IProjectApprovalStepRepository _stepRepo = stepRepo;
+        private readonly IApprovalRuleQuery _ruleRepo;
+        private readonly IProjectApprovalStepCommand _stepRepo;
+
+        public ApprovalService(IApprovalRuleQuery ruleRepo, IProjectApprovalStepCommand stepRepo)
+        {
+            _ruleRepo = ruleRepo;
+            _stepRepo = stepRepo;
+        }
 
         public async Task GenerarWorkflowAsync(ProjectProposal propuesta)
         {
@@ -27,8 +33,8 @@ namespace Application.UseCases
                 .Select(g => g
                     .OrderByDescending(r =>
                         (r.Area.HasValue ? 1 : 0) + (r.Type.HasValue ? 1 : 0))
-                    .First()
-                ).OrderBy(r => r.StepOrder)
+                    .First())
+                .OrderBy(r => r.StepOrder)
                 .ToList();
 
             foreach (var regla in reglasSeleccionadas)
@@ -38,19 +44,13 @@ namespace Application.UseCases
                     ProjectProposalId = propuesta.Id,
                     StepOrder = regla.StepOrder,
                     ApproverRoleId = regla.ApproverRoleId,
-                    Status = 1, // Por ejemplo: 1 = Pendiente
+                    Status = 1 // Pendiente
                 };
 
                 await _stepRepo.AddAsync(paso);
             }
 
             await _stepRepo.SaveChangesAsync();
-
-
-            var primerPaso = reglasSeleccionadas.OrderBy(r => r.StepOrder).First();
-            Console.WriteLine($"Se generó un flujo de aprobación con {reglasSeleccionadas.Count} pasos.");
-            Console.WriteLine($"El primer paso está asignado al rol con ID {primerPaso.ApproverRoleId}.");
         }
     }
 }
-

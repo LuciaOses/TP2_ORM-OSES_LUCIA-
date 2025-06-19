@@ -2,7 +2,7 @@
 
 namespace Application.Interfaces;
 
-public interface IApprovalRuleRepository
+public interface IApprovalRuleQuery
 {
     Task<List<ApprovalRule>> GetRulesByAmountAsync(decimal amount);
 }

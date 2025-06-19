@@ -4,7 +4,7 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace Infrastructure.Repositories
+namespace Infrastructure.Query
 {
     public class ProjectProposalCommand : IProjectProposalCommand
     {
@@ -57,18 +57,17 @@ namespace Infrastructure.Repositories
         public async Task<ProjectProposal?> GetProjectWithStepsByIdAsync(Guid id)
         {
             return await _context.ProjectProposals
-                .Include(p => p.Area)
-                .Include(p => p.Type)
-                .Include(p => p.Status)
-                .Include(p => p.CreateBy)
+                .Include(p => p.AreaNavigation)
+                .Include(p => p.TypeNavigation)
+                .Include(p => p.StatusNavigation)
+                .Include(p => p.CreateByNavigation)
                 .Include(p => p.ApprovalSteps)
                     .ThenInclude(s => s.ApproverUser)
                 .Include(p => p.ApprovalSteps)
                     .ThenInclude(s => s.ApproverRole)
                 .Include(p => p.ApprovalSteps)
-                    .ThenInclude(s => s.Status)
+                    .ThenInclude(s => s.StatusNavigation)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
-
     }
 }
