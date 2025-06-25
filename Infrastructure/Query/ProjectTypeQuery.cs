@@ -6,9 +6,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Query
 {
-    public class ProjectTypeQuery(AprobacionDbContext context) : IProjectTypeQuery
+    public class ProjectTypeQuery : IProjectTypeQuery
     {
-        private readonly AprobacionDbContext _context = context;
+        private readonly AprobacionDbContext _context;
+
+        public ProjectTypeQuery(AprobacionDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<List<ProjectType>> GetAllProjectTypes()
         {

@@ -3,7 +3,11 @@ using Application.Interfaces.IArea;
 using Application.Interfaces.IProjectType;
 using Application.Interfaces.IRole;
 using Application.Interfaces.IUser;
+using Application.Mappers;
+using Application.UseCases;
+using Infrastructure.Query;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Solicitud_De_Proyecto.Controllers
 {
@@ -37,30 +41,33 @@ namespace Solicitud_De_Proyecto.Controllers
         /// Listado de tipos de proyectos
         /// </summary>
         [HttpGet("ProjectType")]
-        public async Task<IActionResult> GetProjectTypes()
+        public async Task<IActionResult> GetAllProjectTypes()
         {
             var projectTypes = await projectTypeService.GetAllAsync();
-            return Ok(projectTypes);
+            var projectTypesDto = ProjectTypeMapper.ToDtoList(projectTypes);
+            return Ok(projectTypesDto);
         }
 
         /// <summary>
         /// Listado de roles de usuario
         /// </summary>
-        [HttpGet("Role")]
-        public async Task<IActionResult> GetRoles()
+        [HttpGet ("Role")]
+        public async Task<IActionResult> Get()
         {
             var roles = await roleService.GetAllAsync();
-            return Ok(roles);
+            var response = RoleMapper.ToDtoList(roles);
+            return Ok(response);
         }
 
         /// <summary>
         /// Listado de estados para una solicitud de proyecto y pasos de aprobación
         /// </summary>
         [HttpGet("ApprovalStatus")]
-        public async Task<IActionResult> GetApprovalStatus()
+        public async Task<IActionResult> GetAllStatuses()
         {
-            var approvalStatus = await approvalStatusService.GetAllAsync();
-            return Ok(approvalStatus);
+            var statuses = await approvalStatusService.GetAllAsync();
+            var response = ApprovalStatusMapper.ToDtoList(statuses);
+            return Ok(response);
         }
 
         /// <summary>
@@ -70,7 +77,8 @@ namespace Solicitud_De_Proyecto.Controllers
         public async Task<IActionResult> GetUsers()
         {
             var users = await userService.GetAllAsync();
-            return Ok(users);
+            var usersDto = UserMapper.ToDtoList(users);
+            return Ok(usersDto);
         }
     }
 }

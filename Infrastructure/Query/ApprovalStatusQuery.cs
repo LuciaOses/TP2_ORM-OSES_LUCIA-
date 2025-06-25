@@ -5,9 +5,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Query
 {
-    public class ApprovalStatusQuery(AprobacionDbContext context) : IApprovalStatusQuery
+    public class ApprovalStatusQuery : IApprovalStatusQuery
     {
-        private readonly AprobacionDbContext _context = context;
+        private readonly AprobacionDbContext _context;
+
+        public ApprovalStatusQuery(AprobacionDbContext context)
+        {
+            _context = context;
+        }
 
         public async Task<List<ApprovalStatus>> GetAllStatuses()
         {

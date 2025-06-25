@@ -4,9 +4,14 @@ using Domain.Entities;
 
 namespace Application.UseCases
 {
-    public class ApprovalStatusService(IApprovalStatusQuery query) : IApprovalStatusService
+    public class ApprovalStatusService : IApprovalStatusService
     {
-        private readonly IApprovalStatusQuery _query = query;
+        private readonly IApprovalStatusQuery _query;
+
+        public ApprovalStatusService(IApprovalStatusQuery query)
+        {
+            _query = query;
+        }
 
         public async Task<List<ApprovalStatus>> GetAllAsync()
         {

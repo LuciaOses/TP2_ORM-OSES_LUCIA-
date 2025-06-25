@@ -1,6 +1,5 @@
 ﻿using Application.Interfaces.IArea;
 using Application.Response;
-using Domain.Entities;
 
 
 namespace Application.UseCases

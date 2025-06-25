@@ -12,7 +12,9 @@ namespace Infrastructure.Query
 
         public async Task<List<User>> GetAllUsers()
         {
-            return await _context.Users.ToListAsync();
+            return await _context.Users
+                .Include(u => u.ApproverRole)
+                .ToListAsync();
         }
     }
 }
