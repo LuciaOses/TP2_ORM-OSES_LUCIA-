@@ -1,7 +1,5 @@
 ﻿using Application.Exceptions;
-using Application.Interfaces.IArea;
 using Application.Interfaces.IProjectProporsal;
-using Application.Interfaces.IUser;
 using Application.Interfaces.IValidator;
 using Application.Mappers.Application.Mappers;
 using Application.Request;
@@ -30,13 +28,15 @@ namespace Application.UseCases
             _approvalService = approvalService;
             _logger = logger;
         }
+
         public async Task<bool> ExistingProject(string title)
         {
             return await _repository.ExistsByTitle(title.Trim());
         }
+
         public async Task<ProjectProposal> CreateProjectProposal(
             string title,
-            string? description,
+            string description,
             int areaId,
             int typeId,
             decimal amount,
@@ -45,7 +45,7 @@ namespace Application.UseCases
         {
             await ValidateInputsAsync(title, description, areaId, typeId, amount, duration, userId);
 
-            var entity = new ProjectProposal
+            var newProposal = new ProjectProposal
             {
                 Id = Guid.NewGuid(),
                 Title = title.Trim(),
@@ -56,49 +56,49 @@ namespace Application.UseCases
                 EstimatedDuration = duration,
                 CreateBy = userId,
                 CreateAt = DateTime.UtcNow,
-                Status = 1
+                Status = 1 // Estado inicial: Pendiente
             };
 
             try
             {
-                await _repository.AddAsync(entity);
+                await _repository.AddAsync(newProposal);
                 await _repository.SaveChangesAsync();
-                await _approvalService.GenerarWorkflowAsync(entity);
+                await _approvalService.GenerarWorkflowAsync(newProposal);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al crear la propuesta de proyecto.");
-                throw new Exception("Error al crear la propuesta de proyecto.", ex);
+                throw new Exception("Ocurrió un error al crear la propuesta de proyecto.", ex);
             }
 
-            var fullEntity = await _repository.GetProjectWithStepsByIdAsync(entity.Id);
+            var loadedProject = await _repository.GetProjectWithStepsByIdAsync(newProposal.Id);
 
-            if (fullEntity == null)
+            if (loadedProject is null)
             {
-                _logger.LogError("Error al cargar el proyecto con sus relaciones luego de la creación.");
-                throw new Exception("No se pudo cargar el proyecto recién creado.");
+                _logger.LogError("No se pudo cargar el proyecto creado con sus relaciones.");
+                throw new Exception("No se pudo recuperar el proyecto luego de su creación.");
             }
 
-            _logger.LogInformation($"Proyecto creado con éxito: {fullEntity.Id}");
-            return fullEntity;
+            _logger.LogInformation("Proyecto creado con éxito. ID: {ProjectId}", loadedProject.Id);
+            return loadedProject;
         }
 
         private async Task ValidateInputsAsync(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
         {
             if (string.IsNullOrWhiteSpace(title))
-                throw new ExceptionBadRequest("El título del proyecto es obligatorio y no puede estar vacío.");
+                throw new ExceptionBadRequest("El título del proyecto es obligatorio.");
 
             if (await ExistingProject(title))
                 throw new ExceptionBadRequest($"Ya existe un proyecto con el título '{title.Trim()}'.");
 
             if (string.IsNullOrWhiteSpace(description))
-                throw new ExceptionBadRequest("La descripción es obligatoria y no puede estar vacía.");
+                throw new ExceptionBadRequest("La descripción del proyecto es obligatoria.");
 
             if (amount <= 0)
-                throw new ExceptionBadRequest("El monto estimado debe ser un valor positivo.");
+                throw new ExceptionBadRequest("El monto estimado debe ser mayor a cero.");
 
             if (duration <= 0)
-                throw new ExceptionBadRequest("La duración estimada debe ser un valor positivo.");
+                throw new ExceptionBadRequest("La duración estimada debe ser mayor a cero.");
 
             if (!await _validator.AreaExistsAsync(areaId))
                 throw new ExceptionBadRequest($"El área especificada (ID: {areaId}) no existe.");
@@ -109,6 +109,7 @@ namespace Application.UseCases
             if (!await _validator.ProjectTypeExists(typeId))
                 throw new ExceptionBadRequest($"El tipo de proyecto especificado (ID: {typeId}) no existe.");
         }
+
         public async Task<IEnumerable<ProjectShort>> SearchProjects(ProjectFilterRequest filters)
         {
             var query = _repository.Query().AsQueryable();
@@ -120,7 +121,7 @@ namespace Application.UseCases
             }
 
             if (!string.IsNullOrWhiteSpace(filters.Title))
-                query = query.Where(p => p.Title.Contains(filters.Title));
+                query = query.Where(p => EF.Functions.Like(p.Title, $"%{filters.Title}%"));
 
             if (filters.Status.HasValue)
                 query = query.Where(p => p.Status == filters.Status.Value);
@@ -128,59 +129,47 @@ namespace Application.UseCases
             if (filters.Applicant.HasValue)
                 query = query.Where(p => p.CreateBy == filters.Applicant.Value);
 
-            var result = await query.ToListAsync();
-            return result.Select(ProjectProposalMapper.ToDetail);
+            var results = await query.ToListAsync();
+            return results.Select(ProjectProposalMapper.ToDetail);
         }
 
         public async Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request)
         {
             await _validator.ValidateUserExistsAsync(request.User);
 
-            var project = await _repository.GetProjectWithStepsByIdAsync(projectId);
-            if (project is null)
-                throw new ExceptionNotFound("Proyecto no encontrado");
+            var project = await _repository.GetProjectWithStepsByIdAsync(projectId)
+                          ?? throw new ExceptionNotFound("Proyecto no encontrado.");
 
             var step = project.ApprovalSteps
                               .FirstOrDefault(s => s.ApproverUserId == request.User);
 
             if (step is null)
-                throw new ExceptionBadRequest("El usuario no está habilitado para aprobar este proyecto.");
+                throw new ExceptionBadRequest("El usuario no tiene permisos para aprobar este proyecto.");
 
-            
-            if (step.Status != 1 && step.Status != 4)
+            if (step.Status is not (1 or 4)) 
                 throw new ExceptionBadRequest("El paso ya fue resuelto y no puede modificarse.");
 
-            
-            if ((request.Status == 3 || request.Status == 4) &&
-                string.IsNullOrWhiteSpace(request.Observation))
-                throw new ExceptionBadRequest("La observación es obligatoria para observar o rechazar.");
+            if ((request.Status == 3 || request.Status == 4) && string.IsNullOrWhiteSpace(request.Observation))
+                throw new ExceptionBadRequest("Debe ingresar una observación al observar o rechazar.");
 
             step.Status = request.Status;
             step.Observations = request.Observation;
             step.DecisionDate = DateTime.UtcNow;
 
             
-            switch (request.Status)
+            project.Status = request.Status switch
             {
-                case 2: // Aprobado
-                    if (project.ApprovalSteps.All(s => s.Status == 2))
-                        project.Status = 2;
-                    break;
-
-                case 3: // Rechazado
-                    project.Status = 3;
-                    break;
-
-                case 4: // Observado
-                    project.Status = 4;
-                    break;
-            }
+                2 when project.ApprovalSteps.All(s => s.Status == 2) => 2, // Aprobado
+                3 => 3, // Rechazado
+                4 => 4, // Observado
+                _ => project.Status
+            };
 
             await _repository.UpdateAsync(project);
             await _repository.SaveChangesAsync();
 
-            _logger.LogInformation($"Se ha tomado una decisión sobre el proyecto: {projectId} - Estado actualizado a {project.Status}");
+            _logger.LogInformation("Decisión tomada sobre el proyecto {ProjectId}. Estado actualizado a {Status}.", projectId, project.Status);
             return ProjectProposalMapper.ToDetail(project);
         }
     }
-}    
+}

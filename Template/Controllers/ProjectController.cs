@@ -31,12 +31,13 @@ namespace Presentation.Controllers
             var result = await _service.SearchProjects(filters);
             return Ok(result);
         }
-
         [HttpPost]
-        public async Task<ActionResult<Project>> Create([FromBody] ProjectCreate request)
+        public async Task<IActionResult> Create([FromBody] ProjectCreate request)
         {
             if (!ModelState.IsValid)
-                return BadRequest(new ApiError { Message = "Datos del proyecto inválidos" });
+            {
+                return BadRequest(new ApiError { Message = "Datos del proyecto inválidos." });
+            }
 
             try
             {
@@ -48,25 +49,24 @@ namespace Presentation.Controllers
                     request.Amount,
                     request.Duration,
                     request.User
-                    );
+                );
 
                 var response = ProjectMapper.ToDetailResponse(proposal);
 
                 return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
             }
-            catch (ExceptionBadRequest ex)
+            catch (Exception ex) when (ex is ExceptionBadRequest or ExceptionNotFound or ExceptionConflict)
             {
-                return BadRequest(new ApiError { Message = ex.Message });
+
+                return ex switch
+                {
+                    ExceptionBadRequest => BadRequest(new ApiError { Message = ex.Message }),
+                    ExceptionNotFound => NotFound(new ApiError { Message = ex.Message }),
+                    ExceptionConflict => Conflict(new ApiError { Message = ex.Message }),
+                    _ => StatusCode(500, new ApiError { Message = "Error interno del servidor." })
+                };
             }
-            catch (ExceptionNotFound ex)
-            {
-                return NotFound(new ApiError { Message = ex.Message });
-            }
-            catch (ExceptionConflict ex)
-            {
-                return Conflict(new ApiError { Message = ex.Message });
-            }
-            catch (Exception)
+            catch (Exception ex)
             {
                 return StatusCode(500, new ApiError { Message = "Error interno del servidor." });
             }

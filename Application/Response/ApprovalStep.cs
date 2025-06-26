@@ -3,7 +3,7 @@ namespace Application.Response
 {
     public class ApprovalStep
     {
-        public int Id { get; set; }
+        public long Id { get; set; }
         public int StepOrder { get; set; }
         public DateTime? DecisionDate { get; set; }
         public required string Observations { get; set; }
@@ -12,4 +12,5 @@ namespace Application.Response
         public required GenericResponse ApproverRole { get; set; }
         public required GenericResponse Status { get; set; }
     }
+    
 }

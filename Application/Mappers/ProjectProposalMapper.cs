@@ -15,11 +15,11 @@ namespace Application.Mappers
                     Id = proposal.Id,
                     Title = proposal.Title,
                     Description = proposal.Description,
-                    Area = proposal.AreaNavigation?.Name,
-                    Type = proposal.TypeNavigation?.Name,
                     Amount = proposal.EstimatedAmount,
                     Duration = proposal.EstimatedDuration,
-                    Status = proposal.StatusNavigation?.Name,
+                    Area = proposal.AreaNavigation.Name,
+                    Status = proposal.StatusNavigation.Name,
+                    Type = proposal.TypeNavigation.Name
                 };
             }
         }

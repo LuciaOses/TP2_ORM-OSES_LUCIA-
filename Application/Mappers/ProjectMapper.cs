@@ -1,5 +1,7 @@
 ﻿using Application.Response;
 using Domain.Entities;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Application.Mappers
 {
@@ -12,75 +14,19 @@ namespace Application.Mappers
                 Id = proposal.Id,
                 Title = proposal.Title,
                 Description = proposal.Description,
+                Area = AreaMapper.ToDto(proposal.AreaNavigation),
+                Type = ProjectTypeMapper.ToDto(proposal.TypeNavigation),
                 Amount = proposal.EstimatedAmount,
                 Duration = proposal.EstimatedDuration,
-
-                Area = new GenericResponse
-                {
-                    Id = proposal.AreaNavigation.Id,
-                    Name = proposal.AreaNavigation.Name
-                },
-
-                Type =  new GenericResponse
-                {
-                    Id = proposal.TypeNavigation.Id,
-                    Name = proposal.TypeNavigation.Name
-                },
-
-                Status = new GenericResponse
-                {
-                    Id = proposal.StatusNavigation.Id,
-                    Name = proposal.StatusNavigation.Name
-                },
-
-                
-                User = new Users
-                {
-                    Id = proposal.CreateByNavigation.Id,
-                    Name = proposal.CreateByNavigation.Name,
-                    Email = proposal.CreateByNavigation.Email,
-                    Role =  new GenericResponse
-                    {
-                        Id = proposal.CreateByNavigation.Role,
-                        Name = proposal.CreateByNavigation.Name
-                    }
-                },
-
-                Steps = proposal.ApprovalSteps?
-                    .OrderBy(s => s.StepOrder)
-                    .Select(step => new ApprovalStep
-                    {
-                        Id = (int)step.Id,
-                        StepOrder = step.StepOrder,
-                        DecisionDate = step.DecisionDate,
-                        Observations = step.Observations ?? "",
-
-                        ApproverUser = new Users
-                        {
-                            Id = step.ApproverUser.Id,
-                            Name = step.ApproverUser.Name,
-                            Email = step.ApproverUser.Email,
-                            Role = new GenericResponse
-                            {
-                                Id = step.ApproverUser.Role,
-                                Name = step.ApproverUser.Name
-                            }
-                        },
-
-                        ApproverRole = new GenericResponse
-                        {
-                            Id = step.ApproverRole.Id,
-                            Name = step.ApproverRole.Name
-                        },
-
-                        Status = new GenericResponse
-                        {
-                            Id = step.StatusNavigation.Id,
-                            Name = step.StatusNavigation.Name
-                        }
-                    })
-                    .ToList()
+                Status = ApprovalStatusMapper.ToDto(proposal.StatusNavigation),
+                User = UserMapper.ToDto(proposal.CreateByNavigation)
             };
+        }
+
+        public static List<Project> ToResponseList(List<ProjectProposal> proposals)
+        {
+            return proposals.Select(ToDetailResponse).ToList();
         }
     }
 }
+
