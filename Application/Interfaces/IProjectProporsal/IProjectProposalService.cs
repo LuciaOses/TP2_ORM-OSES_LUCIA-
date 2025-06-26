@@ -1,13 +1,14 @@
 ﻿using Application.Request;
 using Application.Response;
+using Domain.Entities;
 
 namespace Application.Interfaces.IProjectProporsal
 {
     public interface IProjectProposalService
     {
-        Task<Project> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId);
+        Task<ProjectProposal> CreateProjectProposal(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId);
         Task<bool> ExistingProject(string title);
-        Task<IEnumerable<Project>> SearchProjects(ProjectFilterRequest filters);
-        Task<Project> TakeDecision(Guid projectId, DecisionStep request);
+        Task<IEnumerable<ProjectShort>> SearchProjects(ProjectFilterRequest filters);
+        Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request);
     }
 }

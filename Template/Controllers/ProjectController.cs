@@ -1,5 +1,6 @@
 ﻿using Application.Exceptions;
 using Application.Interfaces.IProjectProporsal;
+using Application.Mappers;
 using Application.Request;
 using Application.Response;
 using Application.UseCases;
@@ -24,20 +25,9 @@ namespace Presentation.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Project>>> GetProjects(
-            [FromQuery] string? title,
-            [FromQuery] int? status,
-            [FromQuery] int? applicant,
-            [FromQuery] int? approvalUser)
+        public async Task<ActionResult<IEnumerable<ProjectShort>>> GetProjects(
+            [FromQuery] ProjectFilterRequest filters)
         {
-            var filters = new ProjectFilterRequest
-            {
-                Title = title,
-                Status = status,
-                Applicant = applicant,
-                ApprovalUser = approvalUser
-            };
-
             var result = await _service.SearchProjects(filters);
             return Ok(result);
         }
@@ -45,31 +35,49 @@ namespace Presentation.Controllers
         [HttpPost]
         public async Task<ActionResult<Project>> Create([FromBody] ProjectCreate request)
         {
-            if (!ModelState.IsValid || request.User <= 0 || request.Duration <= 0 || request.Type <= 0 || request.Area <= 0)
+            if (!ModelState.IsValid)
                 return BadRequest(new ApiError { Message = "Datos del proyecto inválidos" });
 
-            var exists = await _service.ExistingProject(request.Title);
-            if (exists)
-                return Conflict(new ApiError { Message = "Ya existe un proyecto creado con ese nombre" });
+            try
+            {
+                var proposal = await _service.CreateProjectProposal(
+                    request.Title,
+                    request.Description,
+                    request.Area,
+                    request.Type,
+                    request.Amount,
+                    request.Duration,
+                    request.User
+                    );
 
-            var response = await _service.CreateProjectProposal(
-                request.Title,
-                request.Description,
-                request.Area,
-                request.Type,
-                request.Amount,
-                request.Duration,
-                request.User);
+                var response = ProjectMapper.ToDetailResponse(proposal);
 
-            return Ok(response);
+                return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
+            }
+            catch (ExceptionBadRequest ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
+            catch (ExceptionNotFound ex)
+            {
+                return NotFound(new ApiError { Message = ex.Message });
+            }
+            catch (ExceptionConflict ex)
+            {
+                return Conflict(new ApiError { Message = ex.Message });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new ApiError { Message = "Error interno del servidor." });
+            }
         }
 
         [HttpPatch("{id}/decision")]
-        [ProducesResponseType(typeof(Project), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProjectShort), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<Project>> TakeDecision(Guid id, [FromBody] DecisionStep request)
+        public async Task<ActionResult<ProjectShort>> TakeDecision(Guid id, [FromBody] DecisionStep request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiError { Message = "El modelo de decisión es inválido." });
@@ -114,8 +122,7 @@ namespace Presentation.Controllers
             var result = await _updateProjectProposal.ExecuteAsync(id, request);
             if (result == null)
                 return NotFound(new ApiError { Message = "Proyecto no encontrado" });
-
-            if (result == ProjectDetailResponse.Conflict)
+            if (result.Status?.Id == 3)
                 return Conflict(new ApiError { Message = "El proyecto ya no se encuentra en un estado que permite modificaciones" });
 
             return Ok(result);

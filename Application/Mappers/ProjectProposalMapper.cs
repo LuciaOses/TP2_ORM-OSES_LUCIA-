@@ -8,20 +8,18 @@ namespace Application.Mappers
     {
         public static class ProjectProposalMapper
         {
-            public static Project ToDetail(ProjectProposal proposal)
+            public static ProjectShort ToDetail(ProjectProposal proposal)
             {
-                return new Project
+                return new ProjectShort
                 {
                     Id = proposal.Id,
                     Title = proposal.Title,
                     Description = proposal.Description,
                     Area = proposal.AreaNavigation?.Name,
                     Type = proposal.TypeNavigation?.Name,
-                    EstimatedAmount = proposal.EstimatedAmount,
-                    EstimatedDuration = proposal.EstimatedDuration,
+                    Amount = proposal.EstimatedAmount,
+                    Duration = proposal.EstimatedDuration,
                     Status = proposal.StatusNavigation?.Name,
-                    CreateDate = proposal.CreateAt,
-                    CreatedBy = proposal.CreateByNavigation?.Name,
                 };
             }
         }

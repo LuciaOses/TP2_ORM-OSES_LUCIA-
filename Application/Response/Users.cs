@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Application.Response
 {
-    public class UsersResponse
+    public class Users
     {
         public int Id { get; set; }
 

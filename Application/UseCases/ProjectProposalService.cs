@@ -1,5 +1,7 @@
 ﻿using Application.Exceptions;
+using Application.Interfaces.IArea;
 using Application.Interfaces.IProjectProporsal;
+using Application.Interfaces.IUser;
 using Application.Interfaces.IValidator;
 using Application.Mappers.Application.Mappers;
 using Application.Request;
@@ -7,7 +9,6 @@ using Application.Response;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using System.ComponentModel.DataAnnotations;
 
 namespace Application.UseCases
 {
@@ -29,13 +30,11 @@ namespace Application.UseCases
             _approvalService = approvalService;
             _logger = logger;
         }
-
         public async Task<bool> ExistingProject(string title)
         {
-            return await _repository.ExistsByTitle(title);
+            return await _repository.ExistsByTitle(title.Trim());
         }
-
-        public async Task<Project> CreateProjectProposal(
+        public async Task<ProjectProposal> CreateProjectProposal(
             string title,
             string? description,
             int areaId,
@@ -44,42 +43,73 @@ namespace Application.UseCases
             int duration,
             int userId)
         {
-            await _validator.ValidateAreaExistsAsync(areaId);
-            await _validator.ValidateUserExistsAsync(userId);
-
-            if (!await _validator.ProjectTypeExists(typeId))
-                throw new ValidationException("El tipo de proyecto especificado no existe.");
+            await ValidateInputsAsync(title, description, areaId, typeId, amount, duration, userId);
 
             var entity = new ProjectProposal
             {
                 Id = Guid.NewGuid(),
                 Title = title.Trim(),
-                Description = description?.Trim(),
+                Description = description.Trim(),
                 Area = areaId,
                 Type = typeId,
                 EstimatedAmount = amount,
                 EstimatedDuration = duration,
                 CreateBy = userId,
                 CreateAt = DateTime.UtcNow,
-                Status = 1 // Pendiente
+                Status = 1
             };
 
             try
             {
                 await _repository.AddAsync(entity);
+                await _repository.SaveChangesAsync();
                 await _approvalService.GenerarWorkflowAsync(entity);
             }
             catch (Exception ex)
             {
-                _logger.LogError($"Error al crear la propuesta de proyecto: {ex.Message}");
+                _logger.LogError(ex, "Error al crear la propuesta de proyecto.");
                 throw new Exception("Error al crear la propuesta de proyecto.", ex);
             }
 
-            _logger.LogInformation($"Proyecto creado con éxito: {entity.Id}");
-            return ProjectProposalMapper.ToDetail(entity);
+            var fullEntity = await _repository.GetProjectWithStepsByIdAsync(entity.Id);
+
+            if (fullEntity == null)
+            {
+                _logger.LogError("Error al cargar el proyecto con sus relaciones luego de la creación.");
+                throw new Exception("No se pudo cargar el proyecto recién creado.");
+            }
+
+            _logger.LogInformation($"Proyecto creado con éxito: {fullEntity.Id}");
+            return fullEntity;
         }
 
-        public async Task<IEnumerable<Project>> SearchProjects(ProjectFilterRequest filters)
+        private async Task ValidateInputsAsync(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new ExceptionBadRequest("El título del proyecto es obligatorio y no puede estar vacío.");
+
+            if (await ExistingProject(title))
+                throw new ExceptionBadRequest($"Ya existe un proyecto con el título '{title.Trim()}'.");
+
+            if (string.IsNullOrWhiteSpace(description))
+                throw new ExceptionBadRequest("La descripción es obligatoria y no puede estar vacía.");
+
+            if (amount <= 0)
+                throw new ExceptionBadRequest("El monto estimado debe ser un valor positivo.");
+
+            if (duration <= 0)
+                throw new ExceptionBadRequest("La duración estimada debe ser un valor positivo.");
+
+            if (!await _validator.AreaExistsAsync(areaId))
+                throw new ExceptionBadRequest($"El área especificada (ID: {areaId}) no existe.");
+
+            if (!await _validator.UserExistsAsync(userId))
+                throw new ExceptionBadRequest($"El usuario especificado (ID: {userId}) no existe.");
+
+            if (!await _validator.ProjectTypeExists(typeId))
+                throw new ExceptionBadRequest($"El tipo de proyecto especificado (ID: {typeId}) no existe.");
+        }
+        public async Task<IEnumerable<ProjectShort>> SearchProjects(ProjectFilterRequest filters)
         {
             var query = _repository.Query().AsQueryable();
 
@@ -102,7 +132,7 @@ namespace Application.UseCases
             return result.Select(ProjectProposalMapper.ToDetail);
         }
 
-        public async Task<Project> TakeDecision(Guid projectId, DecisionStep request)
+        public async Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request)
         {
             await _validator.ValidateUserExistsAsync(request.User);
 
@@ -123,7 +153,7 @@ namespace Application.UseCases
             
             if ((request.Status == 3 || request.Status == 4) &&
                 string.IsNullOrWhiteSpace(request.Observation))
-                throw new ValidationException("La observación es obligatoria para observar o rechazar.");
+                throw new ExceptionBadRequest("La observación es obligatoria para observar o rechazar.");
 
             step.Status = request.Status;
             step.Observations = request.Observation;

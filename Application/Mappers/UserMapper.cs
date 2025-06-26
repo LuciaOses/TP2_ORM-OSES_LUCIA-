@@ -6,7 +6,7 @@ namespace Application.Mappers
 {
     public static class UserMapper
     {
-        public static UsersResponse ToDto(User user) => new UsersResponse
+        public static Users ToDto(User user) => new Users
         {
             Id = user.Id,
             Name = user.Name,
@@ -19,7 +19,7 @@ namespace Application.Mappers
             }
         };
 
-        public static IEnumerable<UsersResponse> ToDtoList(IEnumerable<User> users) =>
+        public static IEnumerable<Users> ToDtoList(IEnumerable<User> users) =>
             users.Select(ToDto);
     }
 
