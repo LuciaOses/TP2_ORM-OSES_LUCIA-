@@ -62,6 +62,7 @@ namespace Infrastructure.Query
                 .Include(p => p.TypeNavigation)
                 .Include(p => p.StatusNavigation)
                 .Include(p => p.CreateByNavigation)
+                    .ThenInclude(u => u.ApproverRole)
                 .Include(p => p.ApprovalSteps)
                     .ThenInclude(s => s.ApproverUser)
                 .Include(p => p.ApprovalSteps)
