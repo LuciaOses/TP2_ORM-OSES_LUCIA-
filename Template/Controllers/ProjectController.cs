@@ -123,6 +123,7 @@ namespace Presentation.Controllers
 
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetProjectById(Guid id)
         {
             var result = await _getProjectById.ExecuteAsync(id);
@@ -130,6 +131,5 @@ namespace Presentation.Controllers
 
             return Ok(result);
         }
-
     }
 }

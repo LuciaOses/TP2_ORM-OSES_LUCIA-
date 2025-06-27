@@ -40,7 +40,18 @@ namespace Infrastructure.Query
         public async Task<ProjectProposal?> GetByIdWithStepsAsync(Guid id)
         {
             return await _context.ProjectProposals
+                .Include(p => p.AreaNavigation)
+                .Include(p => p.TypeNavigation)
+                .Include(p => p.StatusNavigation)
+                .Include(p => p.CreateByNavigation)
+                    .ThenInclude(u => u.ApproverRole)
                 .Include(p => p.ApprovalSteps)
+                    .ThenInclude(s => s.ApproverUser)
+                        .ThenInclude(u => u.ApproverRole)
+                .Include(p => p.ApprovalSteps)
+                    .ThenInclude(s => s.ApproverRole)
+                .Include(p => p.ApprovalSteps)
+                    .ThenInclude(s => s.StatusNavigation)
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 

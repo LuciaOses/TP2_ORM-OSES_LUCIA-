@@ -5,17 +5,12 @@ namespace Application.Mappers
 {
     public static class ApprovalStatusMapper
     {
-        
-        public static GenericResponse? ToDto(ApprovalStatus? status)
-        {
-            if (status == null)
-                return null;
 
-            return new GenericResponse
-            {
-                Id = status.Id,
-                Name = status.Name
-            };
+        public static GenericResponse ToDto(ApprovalStatus? status)
+        {
+            return status == null
+                ? new GenericResponse { Id = 0, Name = string.Empty }
+                : new GenericResponse { Id = status.Id, Name = status.Name };
         }
         public static IEnumerable<GenericResponse?> ToDtoList(IEnumerable<ApprovalStatus>? statuses)
         {

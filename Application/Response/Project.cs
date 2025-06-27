@@ -16,7 +16,7 @@ namespace Application.Response
         public required GenericResponse Area { get; set; }
         public required GenericResponse Type { get; set; }
         
-        public required Users User { get; set; }
-        public List<ApprovalStep> Steps { get; set; }
+        public required UserResponse User { get; set; }
+        public List<ApprovalStepResponse> Steps { get; set; }
     }
 }

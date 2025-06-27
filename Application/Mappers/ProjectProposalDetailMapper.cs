@@ -1,7 +1,5 @@
 ﻿using Application.Response;
 using Domain.Entities;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Application.Mappers
 {
@@ -20,10 +18,12 @@ namespace Application.Mappers
                 Duration = proposal.EstimatedDuration,
                 Status = ApprovalStatusMapper.ToDto(proposal.StatusNavigation),
                 User = UserMapper.ToDto(proposal.CreateByNavigation),
-                Steps = proposal.ApprovalSteps
-                    .Select(StepMapper.ToShortResponse)
-                    .OrderBy(s => s.StepOrder)
-                    .ToList()
+                Steps = proposal.ApprovalSteps != null
+                ? proposal.ApprovalSteps
+                .Select(StepMapper.ToShortResponse)
+                .OrderBy(s => s.StepOrder)
+                .ToList()
+                : new List<ApprovalStepResponse>()
             };
         }
 

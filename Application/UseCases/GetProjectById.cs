@@ -12,12 +12,12 @@ namespace Application.UseCases
             _repository = repository;
         }
 
-        public async Task<Project?> ExecuteAsync(Guid id)
+        public async Task<ProjectProposalResponseDetail?> ExecuteAsync(Guid id)
         {
             var proposal = await _repository.GetByIdWithStepsAsync(id);
             if (proposal == null) return null;
 
-            return ProjectMapper.ToDetailResponse(proposal);
+            return ProjectProposalDetailMapper.ToDetailResponse(proposal);
         }
     }
 }
