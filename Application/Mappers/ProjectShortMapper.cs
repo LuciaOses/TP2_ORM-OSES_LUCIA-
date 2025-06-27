@@ -6,7 +6,7 @@ namespace Application.Mappers
 {
     namespace Application.Mappers
     {
-        public static class ProjectProposalMapper
+        public static class ProjectShortMapper
         {
             public static ProjectShort ToDetail(ProjectProposal proposal)
             {

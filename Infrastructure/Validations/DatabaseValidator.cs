@@ -40,14 +40,14 @@ namespace Infraestructura.Validations
                 ?? throw new ExceptionBadRequest("El usuario no fue encontrado.");
         }
 
-        public Task<bool> AreaExistsAsync(int areaId)
+        public async Task<Area?> GetAreaByIdAsync(int areaId)
         {
-            throw new NotImplementedException();
+            return await _dbContext.Areas.FindAsync(areaId);
         }
 
-        public Task<bool> UserExistsAsync(int userId)
+        public async Task<ProjectType?> GetProjectTypeByIdAsync(int typeId)
         {
-            throw new NotImplementedException();
+            return await _dbContext.ProjectTypes.FindAsync(typeId);
         }
     }
 }

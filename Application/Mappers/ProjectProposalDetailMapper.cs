@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Application.Mappers
 {
-    public static class ProjectProposalResponseDetailMapper
+    public static class ProjectProposalDetailMapper
     {
         public static ProjectProposalResponseDetail ToDetailResponse(ProjectProposal proposal)
         {

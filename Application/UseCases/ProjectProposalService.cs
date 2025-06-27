@@ -1,6 +1,7 @@
 ﻿using Application.Exceptions;
 using Application.Interfaces.IProjectProporsal;
 using Application.Interfaces.IValidator;
+using Application.Mappers;
 using Application.Mappers.Application.Mappers;
 using Application.Request;
 using Application.Response;
@@ -29,34 +30,35 @@ namespace Application.UseCases
             _logger = logger;
         }
 
-        public async Task<bool> ExistingProject(string title)
+        public async Task<bool> ExistsByTitle(string title)
         {
             return await _repository.ExistsByTitle(title.Trim());
         }
 
-        public async Task<ProjectProposal> CreateProjectProposal(
-            string title,
-            string description,
-            int areaId,
-            int typeId,
-            decimal amount,
-            int duration,
-            int userId)
+        public async Task<ProjectProposalResponseDetail> CreateProjectProposal(ProjectCreate request)
         {
-            await ValidateInputsAsync(title, description, areaId, typeId, amount, duration, userId);
+            var (area, type, user) = await ValidateInputsAndLoadEntitiesAsync(
+                request.Title,
+                request.Description,
+                request.Area,
+                request.Type,
+                request.Amount,
+                request.Duration,
+                request.User
+            );
 
             var newProposal = new ProjectProposal
             {
                 Id = Guid.NewGuid(),
-                Title = title.Trim(),
-                Description = description.Trim(),
-                Area = areaId,
-                Type = typeId,
-                EstimatedAmount = amount,
-                EstimatedDuration = duration,
-                CreateBy = userId,
+                Title = request.Title.Trim(),
+                Description = request.Description.Trim(),
+                Area = area.Id,
+                Type = type.Id,
+                CreateBy = user.Id,
+                EstimatedAmount = request.Amount,
+                EstimatedDuration = request.Duration,
                 CreateAt = DateTime.UtcNow,
-                Status = 1 // Estado inicial: Pendiente
+                Status = 1 // Pendiente
             };
 
             try
@@ -65,30 +67,35 @@ namespace Application.UseCases
                 await _repository.SaveChangesAsync();
                 await _approvalService.GenerarWorkflowAsync(newProposal);
             }
-            catch (Exception ex)
+            catch (DbUpdateException dbEx)
             {
-                _logger.LogError(ex, "Error al crear la propuesta de proyecto.");
-                throw new Exception("Ocurrió un error al crear la propuesta de proyecto.", ex);
+                _logger.LogError(dbEx, "Error de base de datos al guardar la propuesta de proyecto.");
+                throw new ApplicationException("Error al guardar la propuesta de proyecto en la base de datos.");
+            }
+            catch (Exception ex) when (ex is not ExceptionBadRequest)
+            {
+                _logger.LogError(ex, "Error inesperado al crear la propuesta de proyecto.");
+                throw new ApplicationException("Ocurrió un error inesperado al crear la propuesta de proyecto.");
             }
 
-            var loadedProject = await _repository.GetProjectWithStepsByIdAsync(newProposal.Id);
+            var loadedProposal = await _repository.GetProjectWithStepsByIdAsync(newProposal.Id);
 
-            if (loadedProject is null)
+            if (loadedProposal == null)
             {
-                _logger.LogError("No se pudo cargar el proyecto creado con sus relaciones.");
-                throw new Exception("No se pudo recuperar el proyecto luego de su creación.");
+                _logger.LogError("No se pudo cargar la propuesta creada con sus relaciones. ID: {ProjectId}", newProposal.Id);
+                throw new ApplicationException("No se pudo recuperar el proyecto luego de su creación.");
             }
 
-            _logger.LogInformation("Proyecto creado con éxito. ID: {ProjectId}", loadedProject.Id);
-            return loadedProject;
+            _logger.LogInformation("Propuesta de proyecto creada exitosamente. ID: {ProjectId}", loadedProposal.Id);
+
+            return ProjectProposalDetailMapper.ToDetailResponse(loadedProposal);
         }
-
-        private async Task ValidateInputsAsync(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
+        private async Task<(Area, ProjectType, User)> ValidateInputsAndLoadEntitiesAsync(string title, string? description, int areaId, int typeId, decimal amount, int duration, int userId)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ExceptionBadRequest("El título del proyecto es obligatorio.");
 
-            if (await ExistingProject(title))
+            if (await ExistsByTitle(title))
                 throw new ExceptionBadRequest($"Ya existe un proyecto con el título '{title.Trim()}'.");
 
             if (string.IsNullOrWhiteSpace(description))
@@ -100,14 +107,16 @@ namespace Application.UseCases
             if (duration <= 0)
                 throw new ExceptionBadRequest("La duración estimada debe ser mayor a cero.");
 
-            if (!await _validator.AreaExistsAsync(areaId))
-                throw new ExceptionBadRequest($"El área especificada (ID: {areaId}) no existe.");
+            var area = await _validator.GetAreaByIdAsync(areaId)
+                       ?? throw new ExceptionBadRequest($"El área especificada (ID: {areaId}) no existe.");
 
-            if (!await _validator.UserExistsAsync(userId))
-                throw new ExceptionBadRequest($"El usuario especificado (ID: {userId}) no existe.");
+            var type = await _validator.GetProjectTypeByIdAsync(typeId)
+                       ?? throw new ExceptionBadRequest($"El tipo de proyecto especificado (ID: {typeId}) no existe.");
 
-            if (!await _validator.ProjectTypeExists(typeId))
-                throw new ExceptionBadRequest($"El tipo de proyecto especificado (ID: {typeId}) no existe.");
+            var user = await _validator.GetUserById(userId)
+                       ?? throw new ExceptionBadRequest($"El usuario especificado (ID: {userId}) no existe.");
+
+            return (area, type, user);
         }
 
         public async Task<IEnumerable<ProjectShort>> SearchProjects(ProjectFilterRequest filters)
@@ -130,7 +139,7 @@ namespace Application.UseCases
                 query = query.Where(p => p.CreateBy == filters.Applicant.Value);
 
             var results = await query.ToListAsync();
-            return results.Select(ProjectProposalMapper.ToDetail);
+            return results.Select(ProjectShortMapper.ToDetail);
         }
 
         public async Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request)
@@ -146,7 +155,7 @@ namespace Application.UseCases
             if (step is null)
                 throw new ExceptionBadRequest("El usuario no tiene permisos para aprobar este proyecto.");
 
-            if (step.Status is not (1 or 4)) 
+            if (step.Status is not (1 or 4))
                 throw new ExceptionBadRequest("El paso ya fue resuelto y no puede modificarse.");
 
             if ((request.Status == 3 || request.Status == 4) && string.IsNullOrWhiteSpace(request.Observation))
@@ -156,7 +165,6 @@ namespace Application.UseCases
             step.Observations = request.Observation;
             step.DecisionDate = DateTime.UtcNow;
 
-            
             project.Status = request.Status switch
             {
                 2 when project.ApprovalSteps.All(s => s.Status == 2) => 2, // Aprobado
@@ -169,7 +177,7 @@ namespace Application.UseCases
             await _repository.SaveChangesAsync();
 
             _logger.LogInformation("Decisión tomada sobre el proyecto {ProjectId}. Estado actualizado a {Status}.", projectId, project.Status);
-            return ProjectProposalMapper.ToDetail(project);
+            return ProjectShortMapper.ToDetail(project);
         }
     }
 }

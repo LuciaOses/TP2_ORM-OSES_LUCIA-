@@ -8,8 +8,9 @@ namespace Application.Interfaces.IValidator
         Task ValidateAreaExistsAsync(int areaId);
         Task<User> GetUserById(int userId);
         Task<bool> ProjectTypeExists(int typeId);
-        Task<bool> AreaExistsAsync(int areaId);
-        Task<bool> UserExistsAsync(int userId);
+
+        Task<Area?> GetAreaByIdAsync(int areaId);
+        Task<ProjectType?> GetProjectTypeByIdAsync(int typeId);
 
     }
 }

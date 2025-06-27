@@ -17,7 +17,8 @@ namespace Infrastructure.Query
 
         public async Task<bool> ExistsByTitle(string title)
         {
-            return await _context.ProjectProposals.AnyAsync(p => p.Title == title);
+            var normalizedTitle = title.Trim().ToLower();
+            return await _context.ProjectProposals.AnyAsync(p => p.Title.ToLower() == normalizedTitle);
         }
 
         public async Task AddAsync(ProjectProposal proposal)
@@ -46,7 +47,7 @@ namespace Infrastructure.Query
         public async Task UpdateAsync(ProjectProposal proposal)
         {
             _context.ProjectProposals.Update(proposal);
-
+            await _context.SaveChangesAsync(); 
         }
 
         public async Task SaveChangesAsync()

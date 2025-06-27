@@ -7,13 +7,24 @@ namespace Application.Mappers
 {
     public static class AreaMapper
     {
-        public static GenericResponse ToDto(Area area) => new GenericResponse
+        public static GenericResponse? ToDto(Area? area)
         {
-            Id = area.Id,
-            Name = area.Name
-        };
+            if (area == null)
+                return null;
 
-        public static IEnumerable<GenericResponse> ToDtoList(IEnumerable<Area> areas) =>
-            areas.Select(ToDto);
+            return new GenericResponse
+            {
+                Id = area.Id,
+                Name = area.Name
+            };
+        }
+
+        public static IEnumerable<GenericResponse?> ToDtoList(IEnumerable<Area>? areas)
+        {
+            if (areas == null)
+                return Enumerable.Empty<GenericResponse?>();
+
+            return areas.Select(ToDto);
+        }
     }
 }

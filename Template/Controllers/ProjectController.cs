@@ -31,7 +31,12 @@ namespace Presentation.Controllers
             var result = await _service.SearchProjects(filters);
             return Ok(result);
         }
+        /// <returns>Proyecto creado con detalles completos.</returns>
+        /// <response code="201">Created</response>
+        /// <response code="400">BadRequest</response>
         [HttpPost]
+        [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] ProjectCreate request)
         {
             if (!ModelState.IsValid)
@@ -41,23 +46,11 @@ namespace Presentation.Controllers
 
             try
             {
-                var proposal = await _service.CreateProjectProposal(
-                    request.Title,
-                    request.Description,
-                    request.Area,
-                    request.Type,
-                    request.Amount,
-                    request.Duration,
-                    request.User
-                );
-
-                var response = ProjectMapper.ToDetailResponse(proposal);
-
+                var response = await _service.CreateProjectProposal(request);
                 return CreatedAtAction(nameof(GetProjectById), new { id = response.Id }, response);
             }
             catch (Exception ex) when (ex is ExceptionBadRequest or ExceptionNotFound or ExceptionConflict)
             {
-
                 return ex switch
                 {
                     ExceptionBadRequest => BadRequest(new ApiError { Message = ex.Message }),
@@ -66,7 +59,7 @@ namespace Presentation.Controllers
                     _ => StatusCode(500, new ApiError { Message = "Error interno del servidor." })
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new ApiError { Message = "Error interno del servidor." });
             }

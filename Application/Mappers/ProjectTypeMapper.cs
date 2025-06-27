@@ -5,14 +5,24 @@ namespace Application.Mappers
 {
     public static class ProjectTypeMapper
     {
-        public static GenericResponse ToDto(ProjectType type) => new GenericResponse
+        public static GenericResponse? ToDto(ProjectType? type)
         {
-            Id = type.Id,
-            Name = type.Name
-        };
+            if (type == null)
+                return null;
 
-        public static IEnumerable<GenericResponse> ToDtoList(IEnumerable<ProjectType> types) =>
-            types.Select(ToDto);
+            return new GenericResponse
+            {
+                Id = type.Id,
+                Name = type.Name
+            };
+        }
+
+        public static IEnumerable<GenericResponse?> ToDtoList(IEnumerable<ProjectType>? types)
+        {
+            if (types == null)
+                return Enumerable.Empty<GenericResponse?>();
+
+            return types.Select(ToDto);
+        }
     }
 }
-
