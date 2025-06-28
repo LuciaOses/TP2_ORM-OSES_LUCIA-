@@ -36,7 +36,6 @@ namespace Infrastructure.Query
                 .Include(p => p.CreateByNavigation)
                 .Include(p => p.ApprovalSteps);
         }
-
         public async Task<ProjectProposal?> GetByIdWithStepsAsync(Guid id)
         {
             return await _context.ProjectProposals
@@ -55,32 +54,15 @@ namespace Infrastructure.Query
                 .FirstOrDefaultAsync(p => p.Id == id);
         }
 
-        public async Task UpdateAsync(ProjectProposal proposal)
+        public Task UpdateAsync(ProjectProposal proposal)
         {
             _context.ProjectProposals.Update(proposal);
-            await _context.SaveChangesAsync(); 
+            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
-        }
-
-        public async Task<ProjectProposal?> GetProjectWithStepsByIdAsync(Guid id)
-        {
-            return await _context.ProjectProposals
-                .Include(p => p.AreaNavigation)
-                .Include(p => p.TypeNavigation)
-                .Include(p => p.StatusNavigation)
-                .Include(p => p.CreateByNavigation)
-                    .ThenInclude(u => u.ApproverRole)
-                .Include(p => p.ApprovalSteps)
-                    .ThenInclude(s => s.ApproverUser)
-                .Include(p => p.ApprovalSteps)
-                    .ThenInclude(s => s.ApproverRole)
-                .Include(p => p.ApprovalSteps)
-                    .ThenInclude(s => s.StatusNavigation)
-                .FirstOrDefaultAsync(p => p.Id == id);
         }
     }
 }

@@ -9,6 +9,6 @@ namespace Application.Interfaces.IProjectProporsal
         Task<ProjectProposalResponseDetail> CreateProjectProposal(ProjectCreate request);
         Task<bool> ExistsByTitle(string title);
         Task<IEnumerable<ProjectShort>> SearchProjects(ProjectFilterRequest filters);
-        Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request);
+        Task<ProjectProposalResponseDetail> TakeDecision(Guid projectId, DecisionStep request);
     }
 }

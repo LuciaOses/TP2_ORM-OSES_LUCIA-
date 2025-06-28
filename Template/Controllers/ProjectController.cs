@@ -66,7 +66,7 @@ namespace Presentation.Controllers
         }
 
         [HttpPatch("{id}/decision")]
-        [ProducesResponseType(typeof(ProjectShort), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
@@ -124,6 +124,7 @@ namespace Presentation.Controllers
 
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
+
         public async Task<IActionResult> GetProjectById(Guid id)
         {
             var result = await _getProjectById.ExecuteAsync(id);

@@ -78,7 +78,7 @@ namespace Application.UseCases
                 throw new ApplicationException("Ocurrió un error inesperado al crear la propuesta de proyecto.");
             }
 
-            var loadedProposal = await _repository.GetProjectWithStepsByIdAsync(newProposal.Id);
+            var loadedProposal = await _repository.GetByIdWithStepsAsync(newProposal.Id);
 
             if (loadedProposal == null)
             {
@@ -142,42 +142,76 @@ namespace Application.UseCases
             return results.Select(ProjectShortMapper.ToDetail);
         }
 
-        public async Task<ProjectShort> TakeDecision(Guid projectId, DecisionStep request)
+        public async Task<ProjectProposalResponseDetail> TakeDecision(Guid projectId, DecisionStep request)
         {
             await _validator.ValidateUserExistsAsync(request.User);
 
-            var project = await _repository.GetProjectWithStepsByIdAsync(projectId)
+            var project = await _repository.GetByIdWithStepsAsync(projectId)
                           ?? throw new ExceptionNotFound("Proyecto no encontrado.");
 
-            var step = project.ApprovalSteps
-                              .FirstOrDefault(s => s.ApproverUserId == request.User);
+            if (project.Status != 1 && project.Status != 4)
+                throw new ExceptionBadRequest("Solo se puede modificar un proyecto en estado Pendiente o Observado.");
 
+            var step = project.ApprovalSteps.FirstOrDefault(s => s.Id == request.Id && s.ApproverUserId == request.User);
             if (step is null)
-                throw new ExceptionBadRequest("El usuario no tiene permisos para aprobar este proyecto.");
+                throw new ExceptionBadRequest("El usuario no tiene permisos para aprobar este paso del proyecto.");
 
-            if (step.Status is not (1 or 4))
-                throw new ExceptionBadRequest("El paso ya fue resuelto y no puede modificarse.");
+            if (request.Status is not (2 or 3 or 4))
+                throw new ExceptionBadRequest("Estado inválido.");
 
+            if (step.Status == 2)
+                throw new ExceptionBadRequest("No se puede modificar un paso que ya fue aprobado.");
+
+            if (step.Status == 3)
+                throw new ExceptionBadRequest("No se puede modificar un paso que ya fue rechazado.");
+
+            if (step.Status == 4 && project.Status != 4)
+                throw new ExceptionBadRequest("No se puede modificar un paso observado si el proyecto no está observado.");
+
+            if (step.Status == request.Status)
+                throw new ExceptionBadRequest("El paso ya tiene este estado.");
+
+            // Solo se puede tomar decisión sobre el primer paso pendiente
+            var firstPending = project.ApprovalSteps
+                .Where(s => s.Status == 1)
+                .OrderBy(s => s.StepOrder)
+                .FirstOrDefault();
+
+            if (firstPending != null && step.Id != firstPending.Id)
+                throw new InvalidOperationException("Solo se puede tomar decisión sobre el paso pendiente más temprano.");
+
+            // Validar observación si se observa o rechaza
             if ((request.Status == 3 || request.Status == 4) && string.IsNullOrWhiteSpace(request.Observation))
                 throw new ExceptionBadRequest("Debe ingresar una observación al observar o rechazar.");
 
+            // Actualizar paso
             step.Status = request.Status;
             step.Observations = request.Observation;
-            step.DecisionDate = DateTime.UtcNow;
+            
 
-            project.Status = request.Status switch
-            {
-                2 when project.ApprovalSteps.All(s => s.Status == 2) => 2, // Aprobado
-                3 => 3, // Rechazado
-                4 => 4, // Observado
-                _ => project.Status
-            };
+            // Calcular nuevo estado del proyecto forzando el paso modificado
+            var updatedSteps = project.ApprovalSteps
+                .Select(s => s.Id == step.Id ? request.Status : s.Status)
+                .ToList();
 
-            await _repository.UpdateAsync(project);
+            if (updatedSteps.All(s => s == 2) && updatedSteps.Count > 1)
+                project.Status = 2; // aprobado
+            else if (updatedSteps.Any(s => s == 3))
+                project.Status = 3; // rechazado
+            else if (updatedSteps.Any(s => s == 4))
+                project.Status = 4; // observado
+            else
+                project.Status = 1; // pendiente
+
             await _repository.SaveChangesAsync();
 
-            _logger.LogInformation("Decisión tomada sobre el proyecto {ProjectId}. Estado actualizado a {Status}.", projectId, project.Status);
-            return ProjectShortMapper.ToDetail(project);
+            var updated = await _repository.GetByIdWithStepsAsync(projectId);
+            if (updated == null)
+                throw new Exception("Error interno: no se pudo recargar el proyecto actualizado.");
+
+            _logger.LogInformation("Decisión tomada sobre el proyecto {ProjectId}. Estado actualizado a {Status}.", projectId, updated.Status);
+
+            return ProjectProposalDetailMapper.ToDetailResponse(updated);
         }
     }
 }
