@@ -1,28 +1,20 @@
 ﻿using Application.Exceptions;
 using Application.Interfaces.IProjectProporsal;
-using Application.Mappers;
 using Application.Request;
 using Application.Response;
 using Application.UseCases;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
 
-namespace Presentation.Controllers
+namespace Solicitud_De_Proyecto.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class ProjectController : ControllerBase
+    public class ProjectController(IProjectProposalService service, GetProjectById getProjectById, UpdateProjectProposal updateProjectProposal) : ControllerBase
     {
-        private readonly IProjectProposalService _service;
-        private readonly GetProjectById _getProjectById;
-        private readonly UpdateProjectProposal _updateProjectProposal;
-
-        public ProjectController(IProjectProposalService service, GetProjectById getProjectById, UpdateProjectProposal updateProjectProposal)
-        {
-            _service = service;
-            _getProjectById = getProjectById;
-            _updateProjectProposal = updateProjectProposal;
-        }
+        private readonly IProjectProposalService _service = service;
+        private readonly GetProjectById _getProjectById = getProjectById;
+        private readonly UpdateProjectProposal _updateProjectProposal = updateProjectProposal;
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProjectShort>>> GetProjects(
@@ -70,7 +62,7 @@ namespace Presentation.Controllers
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status409Conflict)]
-        public async Task<ActionResult<ProjectShort>> TakeDecision(Guid id, [FromBody] DecisionStep request)
+        public async Task<ActionResult<ProjectProposalResponseDetail>> TakeDecision(Guid id, [FromBody] DecisionStep request)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new ApiError { Message = "El modelo de decisión es inválido." });
@@ -82,14 +74,15 @@ namespace Presentation.Controllers
             {
                 var result = await _service.TakeDecision(id, request);
 
-                if (result == null)
-                    return NotFound(new ApiError { Message = "Proyecto no encontrado." });
-
                 return Ok(result);
             }
             catch (ExceptionNotFound)
             {
                 return NotFound(new ApiError { Message = "Proyecto no encontrado." });
+            }
+            catch (ExceptionBadRequest ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
             }
             catch (ValidationException ex)
             {
@@ -99,26 +92,36 @@ namespace Presentation.Controllers
             {
                 return Conflict(new ApiError { Message = ex.Message });
             }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new ApiError { Message = "Error interno del servidor." });
+            }
+        }
+
+
+        [HttpPatch("{id}")]
+        [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<ProjectProposalResponseDetail>> UpdateProject(Guid id, [FromBody] ProjectUpdate request)
+        {
+            if (!ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(request.Title) ||
+                string.IsNullOrWhiteSpace(request.Description) ||
+                request.Duration <= 0)
+            {
+                return BadRequest(new ApiError { Message = "Datos de actualización inválidos" });
+            }
+
+            try
+            {
+                var result = await _updateProjectProposal.ExecuteAsync(id, request);
+                return Ok(result);
+            }
+
             catch (ExceptionBadRequest ex)
             {
                 return BadRequest(new ApiError { Message = ex.Message });
             }
-
-        }
-
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> UpdateProject(Guid id, [FromBody] ProjectUpdate request)
-        {
-            if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.Title) || request.Duration <= 0)
-                return BadRequest(new ApiError { Message = "Datos de actualización inválidos" });
-
-            var result = await _updateProjectProposal.ExecuteAsync(id, request);
-            if (result == null)
-                return NotFound(new ApiError { Message = "Proyecto no encontrado" });
-            if (result.Status?.Id == 3)
-                return Conflict(new ApiError { Message = "El proyecto ya no se encuentra en un estado que permite modificaciones" });
-
-            return Ok(result);
         }
 
 

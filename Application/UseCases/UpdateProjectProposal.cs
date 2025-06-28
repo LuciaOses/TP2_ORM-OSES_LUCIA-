@@ -15,13 +15,24 @@ namespace Application.UseCases
             _repository = repository;
         }
 
-        public async Task<Project?> ExecuteAsync(Guid id, ProjectUpdate request)
+        public async Task<ProjectProposalResponseDetail?> ExecuteAsync(Guid id, ProjectUpdate request)
         {
-            var proposal = await _repository.GetByIdWithStepsAsync(id);
-            if (proposal == null) return null;
+            var proposal = await _repository.GetByIdWithStepsAsync(id)
+                ?? throw new ExceptionNotFound("Proyecto no encontrado.");
 
-            if (proposal.Status != 1)
-                throw new ExceptionBadRequest("La propuesta de proyecto no se puede actualizar debido a su estado.");
+            if (proposal.Status != 4)
+                throw new ExceptionBadRequest("Solo se puede modificar un proyecto en estado Observado.");
+
+            if (string.IsNullOrWhiteSpace(request.Title))
+                throw new ExceptionBadRequest("El título no puede estar vacío.");
+            if (string.IsNullOrWhiteSpace(request.Description))
+                throw new ExceptionBadRequest("La descripción no puede estar vacía.");
+            if (request.Duration <= 0)
+                throw new ExceptionBadRequest("La duración debe ser mayor a 0.");
+
+            var isDuplicated = await _repository.ExistsByTitleExceptIdAsync(request.Title, id);
+            if (isDuplicated)
+                throw new ExceptionBadRequest("Ya existe un proyecto con ese título.");
 
             proposal.Title = request.Title.Trim();
             proposal.Description = request.Description;
@@ -30,7 +41,7 @@ namespace Application.UseCases
             await _repository.UpdateAsync(proposal);
             await _repository.SaveChangesAsync();
 
-            return ProjectMapper.ToDetailResponse(proposal);
+            return ProjectProposalDetailMapper.ToDetailResponse(proposal);
         }
     }
 }

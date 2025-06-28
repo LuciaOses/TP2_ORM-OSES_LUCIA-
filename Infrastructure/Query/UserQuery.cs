@@ -4,7 +4,7 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace Infrastructure.Query
+namespace Infrastructure.Command
 {
     public class UserQuery(AprobacionDbContext context) : IUserQuery
     {

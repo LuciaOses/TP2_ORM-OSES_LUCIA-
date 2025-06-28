@@ -5,7 +5,7 @@ using Application.Interfaces.IRole;
 using Application.Interfaces.IUser;
 using Application.Mappers;
 using Application.UseCases;
-using Infrastructure.Query;
+using Infrastructure.Command;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

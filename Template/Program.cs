@@ -8,7 +8,6 @@ using Application.Interfaces.IUser;
 using Application.Interfaces.IValidator;
 using Application.UseCases;
 using Infraestructura.Validations;
-using Infrastructure.Query;
 using Infrastructure.Command;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

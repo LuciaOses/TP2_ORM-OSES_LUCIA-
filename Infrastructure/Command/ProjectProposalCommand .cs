@@ -4,7 +4,7 @@ using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 
-namespace Infrastructure.Query
+namespace Infrastructure.Command
 {
     public class ProjectProposalCommand : IProjectProposalCommand
     {
@@ -19,6 +19,17 @@ namespace Infrastructure.Query
         {
             var normalizedTitle = title.Trim().ToLower();
             return await _context.ProjectProposals.AnyAsync(p => p.Title.ToLower() == normalizedTitle);
+        }
+
+        public async Task<bool> ExistsByTitleExceptIdAsync(string title, Guid excludeId)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new Exception("El título no puede estar vacío.");
+
+            var normalizedTitle = title.Trim().ToLower();
+
+            return await _context.ProjectProposals
+                .AnyAsync(p => p.Title.ToLower() == normalizedTitle && p.Id != excludeId);
         }
 
         public async Task AddAsync(ProjectProposal proposal)
