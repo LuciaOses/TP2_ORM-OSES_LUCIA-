@@ -4,14 +4,9 @@ using Infrastructure.Persistence;
 
 namespace Infrastructure.Command
 {
-    public class ProjectApprovalStepCommand : IProjectApprovalStepCommand
+    public class ProjectApprovalStepCommand(AprobacionDbContext context) : IProjectApprovalStepCommand
     {
-        private readonly AprobacionDbContext _context;
-
-        public ProjectApprovalStepCommand(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task AddAsync(ProjectApprovalStep step)
         {
@@ -35,4 +30,3 @@ namespace Infrastructure.Command
         }
     }
 }
-

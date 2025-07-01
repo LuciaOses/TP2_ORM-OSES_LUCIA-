@@ -1,7 +1,4 @@
 ﻿
-using System;
-using System.Collections.Generic;
-
 namespace Application.Response
 {
     public class Project

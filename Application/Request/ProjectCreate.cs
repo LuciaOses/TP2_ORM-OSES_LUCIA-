@@ -20,9 +20,10 @@ namespace Application.Request
         public int Area { get; set; }
 
         [Required]
-        public int Type { get; set; }
+        public int User { get; set; }
 
         [Required]
-        public int User { get; set; }
+        public int Type { get; set; }
+        
     }
 }

@@ -5,14 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Command;
 
-public class ApprovalRuleQuery : IApprovalRuleQuery
+public class ApprovalRuleQuery(AprobacionDbContext context) : IApprovalRuleQuery
 {
-    private readonly AprobacionDbContext _context;
-
-    public ApprovalRuleQuery(AprobacionDbContext context)
-    {
-        _context = context;
-    }
+    private readonly AprobacionDbContext _context = context;
 
     public async Task<List<ApprovalRule>> GetRulesByAmountAsync(decimal amount)
     {

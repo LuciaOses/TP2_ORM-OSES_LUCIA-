@@ -16,16 +16,29 @@ namespace Solicitud_De_Proyecto.Controllers
         private readonly GetProjectById _getProjectById = getProjectById;
         private readonly UpdateProjectProposal _updateProjectProposal = updateProjectProposal;
 
+        /// <param name="filters">Filtros: título, estado, solicitante, usuario aprobador.</param>
+        /// <returns>Listado de proyectos resumido.</returns>
+        /// <response code="200">Success</response>
+        /// <response code="400">Bad Request</response>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectShort>>> GetProjects(
-            [FromQuery] ProjectFilterRequest filters)
+        [ProducesResponseType(typeof(IEnumerable<ProjectShort>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IEnumerable<ProjectShort>>> GetProjects([FromQuery] ProjectFilterRequest filters)
         {
-            var result = await _service.SearchProjects(filters);
-            return Ok(result);
+            try
+            {
+                var result = await _service.SearchProjects(filters);
+                return Ok(result);
+            }
+            catch (ExceptionBadRequest ex)
+            {
+                return BadRequest(new ApiError { Message = ex.Message });
+            }
         }
-        /// <returns>Proyecto creado con detalles completos.</returns>
-        /// <response code="201">Created</response>
-        /// <response code="400">BadRequest</response>
+
+        /// <param name="request">Datos del proyecto.</param>
+        /// <response code="201">Created.</response>
+        /// <response code="400">Bad Request</response>
         [HttpPost]
         [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
@@ -67,13 +80,12 @@ namespace Solicitud_De_Proyecto.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(new ApiError { Message = "El modelo de decisión es inválido." });
 
-            if (request.User <= 0 || request.Status < 2 || request.Status > 4)
+            if (request.Id <= 0 || request.User <= 0 || request.Status < 2 || request.Status > 4)
                 return BadRequest(new ApiError { Message = "Los datos del usuario o estado son inválidos." });
 
             try
             {
                 var result = await _service.TakeDecision(id, request);
-
                 return Ok(result);
             }
             catch (ExceptionNotFound)
@@ -92,12 +104,11 @@ namespace Solicitud_De_Proyecto.Controllers
             {
                 return Conflict(new ApiError { Message = ex.Message });
             }
-            catch (Exception)
+            catch (ExceptionConflict ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, new ApiError { Message = "Error interno del servidor." });
+                return Conflict(new ApiError { Message = ex.Message });
             }
         }
-
 
         [HttpPatch("{id}")]
         [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
@@ -124,14 +135,26 @@ namespace Solicitud_De_Proyecto.Controllers
             }
         }
 
-
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ProjectProposalResponseDetail), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiError), StatusCodes.Status400BadRequest)]
 
         public async Task<IActionResult> GetProjectById(Guid id)
         {
+            if (id == Guid.Empty)
+            {
+                return BadRequest(new ApiError
+                {
+                    Message = "Datos de actualización inválidos"
+                });
+            }
+
             var result = await _getProjectById.ExecuteAsync(id);
-            if (result == null) return NotFound();
+
+            if (result == null)
+            {
+                return NotFound();
+            }
 
             return Ok(result);
         }

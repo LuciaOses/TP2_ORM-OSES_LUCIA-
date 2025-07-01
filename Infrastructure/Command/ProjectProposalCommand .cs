@@ -6,14 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Command
 {
-    public class ProjectProposalCommand : IProjectProposalCommand
+    public class ProjectProposalCommand(AprobacionDbContext context) : IProjectProposalCommand
     {
-        private readonly AprobacionDbContext _context;
-
-        public ProjectProposalCommand(AprobacionDbContext context)
-        {
-            _context = context;
-        }
+        private readonly AprobacionDbContext _context = context;
 
         public async Task<bool> ExistsByTitle(string title)
         {
@@ -45,7 +40,8 @@ namespace Infrastructure.Command
                 .Include(p => p.TypeNavigation)
                 .Include(p => p.StatusNavigation)
                 .Include(p => p.CreateByNavigation)
-                .Include(p => p.ApprovalSteps);
+                .Include(p => p.ApprovalSteps)
+                    .ThenInclude(s => s.StatusNavigation);
         }
         public async Task<ProjectProposal?> GetByIdWithStepsAsync(Guid id)
         {

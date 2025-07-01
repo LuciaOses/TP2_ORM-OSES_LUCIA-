@@ -1,7 +1,5 @@
 ﻿using Domain.Entities;
 using Application.Response;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Application.Mappers
 {
